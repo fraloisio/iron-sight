@@ -1,0 +1,32 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Thumbnails
+Thumbs.db
+
+# Node (if any tooling added later)
+node_modules/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Raspberry Pi / MicroPython build artifacts
+*.mpy
+build/
