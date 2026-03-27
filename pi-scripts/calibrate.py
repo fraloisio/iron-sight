@@ -74,11 +74,14 @@ def main():
     print('Aim the rifle at each corner of the projected screen.')
     print('Hold steady and press ENTER to capture each corner.\n')
 
+    # Inset 20% from each edge — both IR dots stay in frame at these angles.
+    # The homography extrapolates correctly to the true screen corners.
+    M = 0.2
     corners = [
-        ('TOP-LEFT',     (0.0, 0.0)),
-        ('TOP-RIGHT',    (1.0, 0.0)),
-        ('BOTTOM-RIGHT', (1.0, 1.0)),
-        ('BOTTOM-LEFT',  (0.0, 1.0)),
+        ('TOP-LEFT     (aim 20% in from corner)', (M,     M    )),
+        ('TOP-RIGHT    (aim 20% in from corner)', (1-M,   M    )),
+        ('BOTTOM-RIGHT (aim 20% in from corner)', (1-M,   1-M  )),
+        ('BOTTOM-LEFT  (aim 20% in from corner)', (M,     1-M  )),
     ]
 
     picam2 = Picamera2()
