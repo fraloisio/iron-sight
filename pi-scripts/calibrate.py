@@ -4,47 +4,23 @@ Run once on the Pi after mounting the camera on the rifle.
 
   python3 calibrate.py
 
-Aim the rifle at each corner of the PROJECTED SCREEN AREA when prompted.
+Aim the rifle at each corner of the projected screen when prompted.
 Hold still, press ENTER. Saves calibration.json when done.
 Restart ir_detect.py to apply.
 """
 
 import cv2
 import numpy as np
-import subprocess
 import json
 import os
+from picamera2 import Picamera2
 
 FRAME_W, FRAME_H = 640, 480
-CAL_PATH = os.path.join(os.path.dirname(__file__), 'calibration.json')
+CAL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'calibration.json')
 
 
-def start_camera():
-    cmd = [
-        'rpicam-vid', '--width', str(FRAME_W), '--height', str(FRAME_H),
-        '--framerate', '30', '--codec', 'mjpeg',
-        '--output', '-', '--timeout', '0', '--nopreview'
-    ]
-    return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-
-
-def read_frame(process):
-    buf = b''
-    while True:
-        chunk = process.stdout.read(4096)
-        if not chunk:
-            return None
-        buf += chunk
-        start = buf.find(b'\xff\xd8')
-        end   = buf.find(b'\xff\xd9')
-        if start != -1 and end != -1 and end > start:
-            jpg = buf[start:end + 2]
-            return cv2.imdecode(np.frombuffer(jpg, np.uint8), cv2.IMREAD_COLOR)
-
-
-def find_dots(frame):
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    _, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
+def find_dots(gray, threshold=200):
+    _, thresh = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     dots = []
     for c in contours:
@@ -70,16 +46,14 @@ def cluster_midpoint(dots):
     return ((lx + rx) / 2, (ly + ry) / 2)
 
 
-def capture_stable(process, n=20):
-    """Average the midpoint over n successful frames."""
+def capture_stable(picam2, n=20):
     samples = []
     attempts = 0
     while len(samples) < n and attempts < n * 4:
         attempts += 1
-        frame = read_frame(process)
-        if frame is None:
-            continue
-        dots = find_dots(frame)
+        frame_rgb = picam2.capture_array()
+        gray = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2GRAY)
+        dots = find_dots(gray)
         mp = cluster_midpoint(dots)
         if mp:
             samples.append(mp)
@@ -104,26 +78,30 @@ def main():
         ('BOTTOM-LEFT',  (0.0, 1.0)),
     ]
 
-    process = start_camera()
+    picam2 = Picamera2()
+    picam2.configure(picam2.create_video_configuration(
+        main={"size": (FRAME_W, FRAME_H), "format": "RGB888"}
+    ))
+    picam2.start()
+    print('Camera ready.\n')
 
     camera_pts = []
     screen_pts  = []
 
     for name, screen_pt in corners:
         while True:
-            input(f'\n  Aim at {name} corner → press ENTER when steady: ')
-            pt, n = capture_stable(process, n=20)
+            input(f'  Aim at {name} corner → press ENTER when steady: ')
+            pt, n = capture_stable(picam2, n=20)
             if pt is None:
                 print(f'  Only got {n} frames with dots — check IR bar is powered and visible. Try again.')
                 continue
-            print(f'  ✓  camera ({pt[0]:.1f}, {pt[1]:.1f})  →  screen {screen_pt}  [{n} frames]')
+            print(f'  ✓  camera ({pt[0]:.1f}, {pt[1]:.1f})  →  screen {screen_pt}  [{n} frames]\n')
             camera_pts.append(pt)
             screen_pts.append(screen_pt)
             break
 
-    process.terminate()
+    picam2.stop()
 
-    # Compute homography: camera pixel coords → normalised screen coords (0–1)
     src = np.float32(camera_pts)
     dst = np.float32(screen_pts)
     H, status = cv2.findHomography(src, dst, cv2.RANSAC)
@@ -133,7 +111,7 @@ def main():
         return
 
     inliers = int(status.sum()) if status is not None else '?'
-    print(f'\n  Homography computed ({inliers}/4 inliers)')
+    print(f'  Homography computed ({inliers}/4 inliers)')
 
     cal = {
         'homography': H.tolist(),

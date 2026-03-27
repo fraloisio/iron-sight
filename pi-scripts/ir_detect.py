@@ -1,22 +1,22 @@
 import cv2
 import numpy as np
-import subprocess
 import asyncio
 import websockets
 import json
 import threading
 import os
+from picamera2 import Picamera2
 
 # ── Load calibration if it exists ────────────────────────
-CAL_PATH = os.path.join(os.path.dirname(__file__), 'calibration.json')
-H = None  # homography matrix
+CAL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'calibration.json')
+H = None
 if os.path.exists(CAL_PATH):
     with open(CAL_PATH) as f:
         cal = json.load(f)
     H = np.float32(cal['homography'])
     print(f'Calibration loaded from {CAL_PATH}')
 else:
-    print('No calibration.json found — using raw normalised coords (run calibrate.py first)')
+    print('No calibration.json — using raw normalised coords (run calibrate.py first)')
 
 # ── WebSocket server ──────────────────────────────────────
 latest_pos = {'x': 0.5, 'y': 0.5, 'shoot': False}
@@ -45,7 +45,7 @@ async def broadcast():
                 except Exception:
                     dead.add(ws)
             clients -= dead
-        await asyncio.sleep(0.033)  # ~30 fps
+        await asyncio.sleep(0.033)
 
 async def main():
     async with websockets.serve(handler, '0.0.0.0', 8765):
@@ -53,10 +53,8 @@ async def main():
         await broadcast()
 
 # ── IR dot detection ──────────────────────────────────────
-def find_dots(frame):
-    """Return list of (x, y) centroids for all bright IR dots in frame."""
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    _, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
+def find_dots(gray, threshold=200):
+    _, thresh = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     dots = []
     for c in contours:
@@ -68,14 +66,10 @@ def find_dots(frame):
     return dots
 
 def cluster_midpoint(dots):
-    """
-    Split dots into left/right clusters by x position.
-    Return (midpoint_x, midpoint_y) in camera pixel coords, or None if < 2 dots.
-    """
     if len(dots) < 2:
         return None
     dots_sorted = sorted(dots, key=lambda d: d[0])
-    half = len(dots_sorted) // 2
+    half  = len(dots_sorted) // 2
     left  = dots_sorted[:half]
     right = dots_sorted[half:]
     lx = sum(d[0] for d in left)  / len(left)
@@ -85,46 +79,28 @@ def cluster_midpoint(dots):
     return ((lx + rx) / 2, (ly + ry) / 2)
 
 def to_screen(cx, cy, frame_w=640, frame_h=480):
-    """
-    Map camera-space midpoint to normalised screen coords (0.0–1.0).
-    Uses homography if calibrated, otherwise simple normalisation.
-    """
     if H is not None:
         pt = np.float32([[[cx, cy]]])
         out = cv2.perspectiveTransform(pt, H)
         nx, ny = float(out[0][0][0]), float(out[0][0][1])
     else:
-        nx = cx / frame_w
-        ny = cy / frame_h
-    # clamp to valid range
+        nx, ny = cx / frame_w, cy / frame_h
     return max(0.0, min(1.0, nx)), max(0.0, min(1.0, ny))
 
 # ── Camera loop ───────────────────────────────────────────
 def camera_loop():
     global latest_pos
-    cmd = [
-        'rpicam-vid', '--width', '640', '--height', '480',
-        '--framerate', '30', '--codec', 'mjpeg',
-        '--output', '-', '--timeout', '0', '--nopreview'
-    ]
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-    buf = b''
-    while True:
-        chunk = process.stdout.read(4096)
-        if not chunk:
-            break
-        buf += chunk
-        start = buf.find(b'\xff\xd8')
-        end   = buf.find(b'\xff\xd9')
-        if start == -1 or end == -1 or end <= start:
-            continue
-        jpg = buf[start:end + 2]
-        buf = buf[end + 2:]
-        frame = cv2.imdecode(np.frombuffer(jpg, np.uint8), cv2.IMREAD_COLOR)
-        if frame is None:
-            continue
+    picam2 = Picamera2()
+    picam2.configure(picam2.create_video_configuration(
+        main={"size": (640, 480), "format": "RGB888"}
+    ))
+    picam2.start()
+    print('Camera started')
 
-        dots = find_dots(frame)
+    while True:
+        frame_rgb = picam2.capture_array()
+        gray = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2GRAY)
+        dots = find_dots(gray)
         mp = cluster_midpoint(dots)
         if mp:
             nx, ny = to_screen(mp[0], mp[1])
