@@ -91,6 +91,9 @@ def to_screen(cx, cy, frame_w=640, frame_h=480):
     return max(0.0, min(1.0, nx)), max(0.0, min(1.0, ny))
 
 # ── Camera loop ───────────────────────────────────────────
+ALPHA = 0.25
+smooth = {'x': 0.5, 'y': 0.5}
+
 def camera_loop():
     global latest_pos
     picam2 = Picamera2()
@@ -109,9 +112,11 @@ def camera_loop():
         mp = cluster_midpoint(dots)
         if mp:
             nx, ny = to_screen(mp[0], mp[1])
-            latest_pos['x'] = round(nx, 3)
-            latest_pos['y'] = round(ny, 3)
-            print(f'dots:{len(dots)}  cam:({mp[0]:.0f},{mp[1]:.0f})  aim:({nx:.3f},{ny:.3f})')
+            smooth['x'] = ALPHA * nx + (1 - ALPHA) * smooth['x']
+            smooth['y'] = ALPHA * ny + (1 - ALPHA) * smooth['y']
+            latest_pos['x'] = round(smooth['x'], 3)
+            latest_pos['y'] = round(smooth['y'], 3)
+            print(f'dots:{len(dots)}  cam:({mp[0]:.0f},{mp[1]:.0f})  aim:({smooth["x"]:.3f},{smooth["y"]:.3f})')
 
 print('Starting IR tracker + WebSocket server...')
 cam_thread = threading.Thread(target=camera_loop, daemon=True)
