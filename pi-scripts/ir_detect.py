@@ -81,7 +81,7 @@ def cluster_midpoint(dots):
     ry = sum(d[1] for d in right) / len(right)
     return ((lx + rx) / 2, (ly + ry) / 2)
 
-def to_screen(cx, cy, frame_w=640, frame_h=480):
+def to_screen(cx, cy, frame_w=640, frame_h=360):
     if H is not None:
         pt = np.float32([[[cx, cy]]])
         out = cv2.perspectiveTransform(pt, H)
@@ -98,7 +98,7 @@ def camera_loop():
     global latest_pos
     picam2 = Picamera2()
     picam2.configure(picam2.create_video_configuration(
-        main={"size": (640, 480), "format": "RGB888"}
+        main={"size": (640, 360), "format": "RGB888"}
     ))
     picam2.start()
     picam2.set_controls({"AeEnable": False, "ExposureTime": 2000, "AnalogueGain": 1.0})

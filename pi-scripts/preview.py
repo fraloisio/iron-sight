@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
 from picamera2 import Picamera2
 
-FRAME_W, FRAME_H = 640, 480
+FRAME_W, FRAME_H = 640, 360  # 16:9 — matches TV aspect ratio
 CAL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'calibration.json')
 M = 0.2  # inset margin — calibration points are 20% from each corner
 
