@@ -37,33 +37,48 @@ smooth = {'x': 320.0, 'y': 240.0}
 ALPHA = 0.25
 
 
-def find_dots(gray):
+DILATION_PX = 18   # merges LEDs within the same cluster into one blob
+MIN_BRIGHT  = 180  # if frame max is below this, no IR bar is visible
+
+def find_clusters(gray):
+    """
+    Returns (left_centroid, right_centroid, midpoint, debug_info) or None.
+    Dilates the threshold mask so the 3 LEDs on each side merge into one blob,
+    then finds the 2 largest blobs and treats them as left/right clusters.
+    """
     brightest = int(gray.max())
-    threshold = max(80, int(brightest * 0.8))
+    if brightest < MIN_BRIGHT:
+        return None, brightest
+
+    threshold = int(brightest * 0.75)
     _, thresh = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    dots = []
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (DILATION_PX, DILATION_PX))
+    dilated = cv2.dilate(thresh, kernel)
+
+    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    blobs = []
     for c in contours:
-        if cv2.contourArea(c) < 3:
+        area = cv2.contourArea(c)
+        if area < 30:
             continue
         M_m = cv2.moments(c)
         if M_m['m00'] > 0:
-            dots.append((int(M_m['m10'] / M_m['m00']), int(M_m['m01'] / M_m['m00'])))
-    return dots, brightest, threshold
+            cx = int(M_m['m10'] / M_m['m00'])
+            cy = int(M_m['m01'] / M_m['m00'])
+            blobs.append((area, cx, cy))
 
+    if len(blobs) < 2:
+        return None, brightest
 
-def cluster_midpoint(dots):
-    if len(dots) < 2:
-        return None
-    dots_sorted = sorted(dots, key=lambda d: d[0])
-    half  = len(dots_sorted) // 2
-    left  = dots_sorted[:half]
-    right = dots_sorted[half:]
-    lx = int(sum(d[0] for d in left)  / len(left))
-    ly = int(sum(d[1] for d in left)  / len(left))
-    rx = int(sum(d[0] for d in right) / len(right))
-    ry = int(sum(d[1] for d in right) / len(right))
-    return (lx, ly), (rx, ry), ((lx + rx) // 2, (ly + ry) // 2)
+    # Take 2 largest blobs, sort left to right
+    blobs.sort(reverse=True)
+    top2 = sorted(blobs[:2], key=lambda b: b[1])
+    _, lx, ly = top2[0]
+    _, rx, ry = top2[1]
+    mid = ((lx + rx) // 2, (ly + ry) // 2)
+    return (lx, ly), (rx, ry), mid, brightest
 
 
 def camera_loop():
@@ -81,29 +96,28 @@ def camera_loop():
         frame = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
         gray  = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2GRAY)
 
-        dots, brightest, threshold = find_dots(gray)
-        result = cluster_midpoint(dots)
-
-        # Draw raw dots
-        for (dx, dy) in dots:
-            cv2.circle(frame, (dx, dy), 8, (0, 255, 255), 2)
-
-        if result:
-            left_c, right_c, raw_mid = result
-            cv2.circle(frame, left_c,  12, (0, 255, 0), 2)
-            cv2.circle(frame, right_c, 12, (0, 255, 0), 2)
-            cv2.line(frame, left_c, right_c, (0, 200, 0), 1)
-
+        result = find_clusters(gray)
+        if result[0] is not None:
+            left_c, right_c, raw_mid, brightest = result
+            # Draw cluster centroids
+            cv2.circle(frame, left_c,  14, (0, 255, 0), 2)
+            cv2.circle(frame, right_c, 14, (0, 255, 0), 2)
+            cv2.line(frame, left_c, right_c, (0, 220, 0), 1)
             # Smooth midpoint
             smooth['x'] = ALPHA * raw_mid[0] + (1 - ALPHA) * smooth['x']
             smooth['y'] = ALPHA * raw_mid[1] + (1 - ALPHA) * smooth['y']
             mid = (int(smooth['x']), int(smooth['y']))
-            cv2.circle(frame, mid, 8, (0, 0, 255), -1)
-            cv2.putText(frame, f'aim: ({mid[0]/FRAME_W:.3f}, {mid[1]/FRAME_H:.3f})',
-                        (10, FRAME_H - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
-
-        cv2.putText(frame, f'dots:{len(dots)}  bright:{brightest}  thresh:{threshold}',
-                    (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1)
+            # Crosshair aim marker
+            cv2.drawMarker(frame, mid, (0, 80, 255), cv2.MARKER_CROSS, 28, 2)
+            cv2.circle(frame, mid, 10, (0, 80, 255), 1)
+            cv2.putText(frame, f'aim ({mid[0]/FRAME_W:.3f}, {mid[1]/FRAME_H:.3f})',
+                        (10, FRAME_H - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 80, 255), 1)
+            cv2.putText(frame, f'bright:{brightest}  LOCKED', (10, 20),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 100), 1)
+        else:
+            brightest = result[1]
+            cv2.putText(frame, f'bright:{brightest}  no IR bar',
+                        (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 100, 255), 1)
 
         # Draw saved calibration points
         with cal_lock:
@@ -233,9 +247,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({'ok': False, 'error': 'invalid corner'})
                 return
             sx, sy = int(smooth['x']), int(smooth['y'])
-            # Require dots to be detected (midpoint moved from default)
-            if latest_jpeg is None:
-                self.send_json({'ok': False})
+            if latest_jpeg is None or smooth['x'] == 320.0:
+                self.send_json({'ok': False, 'error': 'no IR bar detected'})
                 return
             with cal_lock:
                 cal_points[corner] = (sx, sy)

@@ -54,31 +54,30 @@ async def main():
         await broadcast()
 
 # ── IR dot detection ──────────────────────────────────────
-def find_dots(gray):
+DILATION_PX = 18
+MIN_BRIGHT  = 180
+
+def find_clusters(gray):
     brightest = int(gray.max())
-    threshold = max(80, int(brightest * 0.8))
-    _, thresh = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    dots = []
+    if brightest < MIN_BRIGHT:
+        return None
+    _, thresh = cv2.threshold(gray, int(brightest * 0.75), 255, cv2.THRESH_BINARY)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (DILATION_PX, DILATION_PX))
+    dilated = cv2.dilate(thresh, kernel)
+    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    blobs = []
     for c in contours:
-        if cv2.contourArea(c) < 3:
+        if cv2.contourArea(c) < 30:
             continue
         M = cv2.moments(c)
         if M['m00'] > 0:
-            dots.append((M['m10'] / M['m00'], M['m01'] / M['m00']))
-    return dots
-
-def cluster_midpoint(dots):
-    if len(dots) < 2:
+            blobs.append((cv2.contourArea(c), M['m10']/M['m00'], M['m01']/M['m00']))
+    if len(blobs) < 2:
         return None
-    dots_sorted = sorted(dots, key=lambda d: d[0])
-    half  = len(dots_sorted) // 2
-    left  = dots_sorted[:half]
-    right = dots_sorted[half:]
-    lx = sum(d[0] for d in left)  / len(left)
-    ly = sum(d[1] for d in left)  / len(left)
-    rx = sum(d[0] for d in right) / len(right)
-    ry = sum(d[1] for d in right) / len(right)
+    blobs.sort(reverse=True)
+    top2 = sorted(blobs[:2], key=lambda b: b[1])
+    lx, ly = top2[0][1], top2[0][2]
+    rx, ry = top2[1][1], top2[1][2]
     return ((lx + rx) / 2, (ly + ry) / 2)
 
 def to_screen(cx, cy, frame_w=640, frame_h=360):
@@ -108,8 +107,7 @@ def camera_loop():
     while True:
         frame_rgb = picam2.capture_array()
         gray = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2GRAY)
-        dots = find_dots(gray)
-        mp = cluster_midpoint(dots)
+        mp = find_clusters(gray)
         if mp:
             nx, ny = to_screen(mp[0], mp[1])
             smooth['x'] = ALPHA * nx + (1 - ALPHA) * smooth['x']
