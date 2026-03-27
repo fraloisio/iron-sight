@@ -17,7 +17,7 @@ import time
 import json
 import os
 import threading
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 from picamera2 import Picamera2
 
@@ -316,4 +316,4 @@ time.sleep(2)
 print('Preview + calibration running:')
 print('  http://fraspberry.local:8080')
 print('Ctrl+C to stop.\n')
-HTTPServer(('0.0.0.0', 8080), Handler).serve_forever()
+ThreadingHTTPServer(('0.0.0.0', 8080), Handler).serve_forever()

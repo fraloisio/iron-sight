@@ -100,7 +100,7 @@ def camera_loop():
         main={"size": (640, 360), "format": "RGB888"}
     ))
     picam2.start()
-    picam2.set_controls({"AeEnable": False, "ExposureTime": 2000, "AnalogueGain": 1.0})
+    picam2.set_controls({"AeEnable": False, "ExposureTime": 5000, "AnalogueGain": 2.0})
     import time; time.sleep(1)
     print('Camera started')
 
