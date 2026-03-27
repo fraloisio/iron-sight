@@ -114,7 +114,7 @@ def camera_loop():
             smooth['y'] = ALPHA * ny + (1 - ALPHA) * smooth['y']
             latest_pos['x'] = round(smooth['x'], 3)
             latest_pos['y'] = round(smooth['y'], 3)
-            print(f'dots:{len(dots)}  cam:({mp[0]:.0f},{mp[1]:.0f})  aim:({smooth["x"]:.3f},{smooth["y"]:.3f})')
+            print(f'cam:({mp[0]:.0f},{mp[1]:.0f})  aim:({smooth["x"]:.3f},{smooth["y"]:.3f})')
 
 print('Starting IR tracker + WebSocket server...')
 cam_thread = threading.Thread(target=camera_loop, daemon=True)

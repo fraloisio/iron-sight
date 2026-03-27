@@ -151,14 +151,18 @@ HTML = """<!DOCTYPE html>
     font-family:monospace; font-size:12px; cursor:pointer; border-radius:3px;
   }
   button:hover { background:rgba(60,60,60,0.9); border-color:#aaa; }
-  button.done { border-color:#0f0; color:#0f0; }
+  button.done { border-color:#0f0; color:#0f0; background:rgba(0,60,0,0.85); }
   #save { grid-column:1/-1; border-color:#f80; color:#f80; }
   #save:hover { background:rgba(60,30,0,0.9); }
+  #save.saved { border-color:#0f0; color:#0f0; background:rgba(0,60,0,0.85); }
   #status {
-    position:fixed; top:8px; left:0; right:0; text-align:center;
-    font-family:monospace; font-size:12px; color:rgba(255,255,255,0.6);
-    pointer-events:none;
+    position:fixed; top:0; left:0; right:0; text-align:center;
+    font-family:monospace; font-size:15px; font-weight:bold;
+    padding:8px; pointer-events:none;
+    background:rgba(0,0,0,0.7); color:#fff;
   }
+  #status.ok  { color:#0f0; }
+  #status.err { color:#f44; }
 </style>
 </head>
 <body>
@@ -172,22 +176,43 @@ HTML = """<!DOCTYPE html>
   <button id="save" onclick="save()">SAVE CALIBRATION</button>
 </div>
 <script>
+const status = document.getElementById('status');
+function setStatus(msg, type) {
+  status.textContent = msg;
+  status.className = type || '';
+}
 async function capture(corner) {
-  const r = await fetch('/capture?c=' + corner);
-  const d = await r.json();
-  if (d.ok) {
-    document.getElementById('btn-' + corner).classList.add('done');
-    document.getElementById('btn-' + corner).textContent =
-      document.getElementById('btn-' + corner).textContent + '  ✓ (' + d.x + ', ' + d.y + ')';
-    document.getElementById('status').textContent = 'Captured ' + corner + '. ' + d.remaining + ' remaining.';
-  } else {
-    document.getElementById('status').textContent = 'No dots detected — make sure IR bar is visible and try again.';
+  const btn = document.getElementById('btn-' + corner);
+  btn.textContent = '⏳ capturing...';
+  try {
+    const d = await fetch('/capture?c=' + corner).then(r => r.json());
+    if (d.ok) {
+      btn.classList.add('done');
+      btn.textContent = btn.textContent.split('⏳')[0] + ' ✓  (' + d.x + ', ' + d.y + ')';
+      setStatus('✓ ' + corner.toUpperCase() + ' captured — ' + d.remaining + ' point(s) remaining.', 'ok');
+    } else {
+      btn.textContent = btn.textContent.replace('⏳ capturing...', corner);
+      setStatus('✗ ' + (d.error || 'No IR bar detected — aim at the corner and try again.'), 'err');
+    }
+  } catch(e) {
+    setStatus('✗ Request failed — is preview.py still running?', 'err');
   }
 }
 async function save() {
-  const r = await fetch('/save');
-  const d = await r.json();
-  document.getElementById('status').textContent = d.ok ? '✓ Calibration saved! Restart ir_detect.py to apply.' : 'Error: ' + d.error;
+  document.getElementById('save').textContent = '⏳ saving...';
+  try {
+    const d = await fetch('/save').then(r => r.json());
+    if (d.ok) {
+      document.getElementById('save').classList.add('saved');
+      document.getElementById('save').textContent = '✓ CALIBRATION SAVED';
+      setStatus('✓ calibration.json saved — restart ir_detect.py to apply.', 'ok');
+    } else {
+      document.getElementById('save').textContent = 'SAVE CALIBRATION';
+      setStatus('✗ Save failed: ' + d.error, 'err');
+    }
+  } catch(e) {
+    setStatus('✗ Request failed.', 'err');
+  }
 }
 </script>
 </body>
