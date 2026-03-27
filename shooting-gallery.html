@@ -397,6 +397,33 @@ function endGame() {
 let mx=window.innerWidth/2, my=window.innerHeight/2;
 const ch=document.getElementById('crosshair');
 document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;ch.style.left=mx+'px';ch.style.top=my+'px';});
+// ── IR TRACKER WEBSOCKET ─────────────────────────────
+// Pi Zero W2 hotspot IP — always 192.168.4.1 when laptop connects to ironside network
+const WS_URL = 'ws://192.168.4.1:8765';
+let ws, wsRetryTimer;
+
+function connectWS() {
+  ws = new WebSocket(WS_URL);
+  ws.onopen = () => {
+    console.log('IR tracker connected');
+    clearTimeout(wsRetryTimer);
+  };
+  ws.onmessage = e => {
+    const d = JSON.parse(e.data);
+    mx = d.x * window.innerWidth;
+    my = d.y * window.innerHeight;
+    ch.style.left = mx + 'px';
+    ch.style.top  = my + 'px';
+    if (d.shoot) shoot(mx, my);
+  };
+  ws.onerror = () => console.warn('IR tracker not reachable — mouse fallback active');
+  ws.onclose = () => {
+    console.warn('IR tracker disconnected — retrying in 3s');
+    wsRetryTimer = setTimeout(connectWS, 3000);
+  };
+}
+connectWS();
+
 document.addEventListener('click',e=>{if(running) shoot(e.clientX,e.clientY);});
 document.addEventListener('keydown',e=>{if(e.code==='Space') shoot(mx,my);});
 document.getElementById('start-btn').addEventListener('click',e=>{e.stopPropagation();startGame();});
