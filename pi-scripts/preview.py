@@ -125,31 +125,38 @@ HTML = """<!DOCTYPE html>
 <title>Iron Sight Preview</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:#111; color:#eee; font-family:monospace; display:flex;
-         flex-direction:column; align-items:center; padding:12px; gap:12px; }
-  img { width:100%; max-width:800px; border:1px solid #333; }
-  #cal { display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%; max-width:800px; }
-  button {
-    padding:12px; background:#222; border:1px solid #444; color:#ccc;
-    font-family:monospace; font-size:13px; cursor:pointer; border-radius:4px;
+  body { background:#000; overflow:hidden; }
+  img { position:fixed; inset:0; width:100vw; height:100vh; object-fit:fill; }
+  #ui {
+    position:fixed; bottom:0; left:0; right:0;
+    display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:8px;
+    background:rgba(0,0,0,0.6);
   }
-  button:hover { background:#333; border-color:#888; }
+  button {
+    padding:10px; background:rgba(30,30,30,0.85); border:1px solid #444; color:#ccc;
+    font-family:monospace; font-size:12px; cursor:pointer; border-radius:3px;
+  }
+  button:hover { background:rgba(60,60,60,0.9); border-color:#aaa; }
   button.done { border-color:#0f0; color:#0f0; }
-  #save { grid-column:1/-1; background:#1a1a1a; border-color:#f80; color:#f80; }
-  #save:hover { background:#2a1a00; }
-  #status { font-size:12px; color:#888; text-align:center; }
+  #save { grid-column:1/-1; border-color:#f80; color:#f80; }
+  #save:hover { background:rgba(60,30,0,0.9); }
+  #status {
+    position:fixed; top:8px; left:0; right:0; text-align:center;
+    font-family:monospace; font-size:12px; color:rgba(255,255,255,0.6);
+    pointer-events:none;
+  }
 </style>
 </head>
 <body>
 <img src="/stream">
-<div id="cal">
+<div id="status">Aim at a corner point, then click its button to capture.</div>
+<div id="ui">
   <button id="btn-tl" onclick="capture('tl')">⌜ TOP-LEFT (20% in)</button>
   <button id="btn-tr" onclick="capture('tr')">⌝ TOP-RIGHT (20% in)</button>
   <button id="btn-bl" onclick="capture('bl')">⌞ BOTTOM-LEFT (20% in)</button>
   <button id="btn-br" onclick="capture('br')">⌟ BOTTOM-RIGHT (20% in)</button>
   <button id="save" onclick="save()">SAVE CALIBRATION</button>
 </div>
-<div id="status">Aim at a corner point, then click its button to capture.</div>
 <script>
 async function capture(corner) {
   const r = await fetch('/capture?c=' + corner);
