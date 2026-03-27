@@ -35,6 +35,7 @@ async def handler(websocket):
         print('Client disconnected')
 
 async def broadcast():
+    global clients
     while True:
         if clients:
             msg = json.dumps(latest_pos)
@@ -53,7 +54,9 @@ async def main():
         await broadcast()
 
 # ── IR dot detection ──────────────────────────────────────
-def find_dots(gray, threshold=200):
+def find_dots(gray):
+    brightest = int(gray.max())
+    threshold = max(80, int(brightest * 0.8))
     _, thresh = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     dots = []
@@ -95,6 +98,8 @@ def camera_loop():
         main={"size": (640, 480), "format": "RGB888"}
     ))
     picam2.start()
+    picam2.set_controls({"AeEnable": False, "ExposureTime": 2000, "AnalogueGain": 1.0})
+    import time; time.sleep(1)
     print('Camera started')
 
     while True:
