@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Test</title>
+<script src="config.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -399,7 +400,7 @@ const ch=document.getElementById('crosshair');
 document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;ch.style.left=mx+'px';ch.style.top=my+'px';});
 // ── IR TRACKER WEBSOCKET ─────────────────────────────
 // Pi Zero W2 hotspot IP — always 192.168.4.1 when laptop connects to ironside network
-const WS_URL = 'ws://192.168.4.1:8765';
+const WS_URL = `ws://${CONFIG.piHost}:${CONFIG.wsPort}`;
 let ws, wsRetryTimer;
 
 function connectWS() {
