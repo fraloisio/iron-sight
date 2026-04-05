@@ -46,7 +46,7 @@ async def broadcast():
                 except Exception:
                     dead.add(ws)
             clients -= dead
-        await asyncio.sleep(0.033)
+        await asyncio.sleep(0.016)
 
 async def main():
     async with websockets.serve(handler, '0.0.0.0', 8765):
@@ -54,20 +54,23 @@ async def main():
         await broadcast()
 
 # ── IR dot detection ──────────────────────────────────────
-DILATION_PX = 18
+DILATION_PX = 9
 MIN_BRIGHT  = 180
+
+smooth_bright = {'v': 200.0}  # EMA-smoothed brightness
 
 def find_clusters(gray):
     brightest = int(gray.max())
     if brightest < MIN_BRIGHT:
         return None
-    _, thresh = cv2.threshold(gray, int(brightest * 0.75), 255, cv2.THRESH_BINARY)
+    smooth_bright['v'] = 0.1 * brightest + 0.9 * smooth_bright['v']
+    _, thresh = cv2.threshold(gray, int(smooth_bright['v'] * 0.75), 255, cv2.THRESH_BINARY)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (DILATION_PX, DILATION_PX))
     dilated = cv2.dilate(thresh, kernel)
     contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     blobs = []
     for c in contours:
-        if cv2.contourArea(c) < 30:
+        if cv2.contourArea(c) < 10 or cv2.contourArea(c) > 2000:
             continue
         M = cv2.moments(c)
         if M['m00'] > 0:
@@ -80,7 +83,7 @@ def find_clusters(gray):
     rx, ry = top2[1][1], top2[1][2]
     return ((lx + rx) / 2, (ly + ry) / 2)
 
-def to_screen(cx, cy, frame_w=640, frame_h=360):
+def to_screen(cx, cy, frame_w=320, frame_h=180):
     if H is not None:
         pt = np.float32([[[cx, cy]]])
         out = cv2.perspectiveTransform(pt, H)
@@ -90,14 +93,14 @@ def to_screen(cx, cy, frame_w=640, frame_h=360):
     return max(0.0, min(1.0, nx)), max(0.0, min(1.0, ny))
 
 # ── Camera loop ───────────────────────────────────────────
-ALPHA = 0.25
+ALPHA = 0.6
 smooth = {'x': 0.5, 'y': 0.5}
 
 def camera_loop():
     global latest_pos
     picam2 = Picamera2()
     picam2.configure(picam2.create_video_configuration(
-        main={"size": (640, 360), "format": "RGB888"}
+        main={"size": (320, 180), "format": "RGB888"}
     ))
     picam2.start()
     picam2.set_controls({"AeEnable": False, "ExposureTime": 5000, "AnalogueGain": 2.0})
