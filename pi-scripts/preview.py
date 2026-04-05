@@ -4,7 +4,7 @@ Streams annotated camera feed and runs calibration from the browser.
 
   python3 preview.py
 
-Open on your Mac:  http://fraspberry.local:8080
+Open on your Mac:  http://fraspberry2.local:8080
 """
 
 import cv2
