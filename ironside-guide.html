@@ -177,5 +177,22 @@ pkill -f ir_detect.py</div>
     <div class="info-item"><div class="info-label">Calibration</div><div class="info-value">preview.py → browser</div></div>
   </div>
 
+  <hr class="divider">
+
+  <!-- Adding a new WiFi network -->
+  <h3>Adding a new WiFi network</h3>
+  <p style="font-size:0.85rem; color:#888; margin-bottom:12px;">SSH into the Pi (via USB if no WiFi available), then:</p>
+
+  <p style="font-size:0.85rem; color:#ccc;">Connect and save the network:</p>
+  <div class="cmd-block">sudo nmcli device wifi connect NETWORK-NAME password thepassword</div>
+
+  <p style="font-size:0.85rem; color:#ccc; margin-top:12px;">Optionally set priority (higher number = preferred):</p>
+  <div class="cmd-block">sudo nmcli connection modify NETWORK-NAME connection.autoconnect-priority 10</div>
+
+  <p style="font-size:0.85rem; color:#ccc; margin-top:12px;">List all saved networks and their priorities:</p>
+  <div class="cmd-block">nmcli connection show | grep wifi</div>
+
+  <div class="note"><strong>How it works:</strong> Pi tries all saved networks on boot, highest priority first. If none are in range after 30s, the hotspot kicks in automatically. Adding new networks does not affect the hotspot fallback.</div>
+
 </body>
 </html>
