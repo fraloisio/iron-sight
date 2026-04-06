@@ -130,6 +130,11 @@ class PortalHandler(BaseHTTPRequestHandler):
         self.wfile.write(html.encode())
 
     def do_GET(self):
+        if self.path != '/':
+            self.send_response(302)
+            self.send_header('Location', 'http://10.42.0.1/')
+            self.end_headers()
+            return
         self.render(scan_networks())
 
     def do_POST(self):

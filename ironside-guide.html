@@ -37,6 +37,13 @@
 </head>
 <body>
 
+  <div style="background:#1b3a1e;border:1px solid #4caf50;border-radius:8px;padding:14px 18px;margin-bottom:24px;">
+    <div style="font-size:0.75rem;color:#4caf50;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">SD Card Backup Reminder</div>
+    <div style="font-size:0.88rem;color:#ccc;line-height:1.5;">Every time you reach a stable milestone, back up the SD card:<br>
+    <code style="background:#252525;padding:2px 6px;border-radius:4px;color:#e6db74;">sudo dd if=/dev/disk4 bs=4m | gzip > ~/Desktop/fraspberry2-backup.img.gz</code><br>
+    <span style="color:#888;font-size:0.8rem;">Check disk number first with <code style="background:#252525;padding:1px 5px;border-radius:3px;color:#e6db74;">diskutil list</code>. Last backup: after MVP tag (2026-04-06).</span></div>
+  </div>
+
   <h1>Iron Sight — Connection Guide</h1>
   <p class="subtitle">Pi hostname: <code>fraspberry2</code> &nbsp;·&nbsp; Three ways to connect</p>
 
@@ -66,12 +73,13 @@
       <span class="badge orange">Option B</span>
       <h2>Pi Hotspot Fallback</h2>
     </div>
-    <p class="when">WiFi not available. Pi creates its own network after 30s on boot, or manually.</p>
+    <p class="when">Need to add a new WiFi network (museum, school, phone hotspot). Pi creates its own network after 30s on boot if no known WiFi found, or trigger manually.</p>
     <ol class="steps">
-      <li>Wait ~30s after Pi boots with no WiFi — hotspot starts automatically.</li>
+      <li>Wait ~30s after Pi boots with no known WiFi — hotspot starts automatically.</li>
       <li>Or SSH in via USB and run: <code>sudo ironside-hotspot.sh</code></li>
-      <li>On your Mac, connect to WiFi: <code>ironside</code> / password: <code>ironsight</code></li>
-      <li>SSH in: <code>ssh admin@10.42.0.1</code></li>
+      <li>On your Mac/phone, connect to WiFi: <code>ironside</code> / password: <code>ironsight</code></li>
+      <li>A portal page opens automatically — pick a network, enter password, done.</li>
+      <li>Pi connects to that network and the hotspot disappears. Reconnect your Mac to the same network.</li>
     </ol>
     <div class="info-grid">
       <div class="info-item"><div class="info-label">SSID</div><div class="info-value">ironside</div></div>
