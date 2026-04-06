@@ -2,6 +2,6 @@
 // Edit this file only. Never touch the HTML.
 
 const CONFIG = {
-  piHost: '192.168.0.178',   // Pi Zero W2 IP or hostname (e.g. 'irrifle.local')
+  piHost: 'fraspberry2.local',   // Pi hostname — works on WiFi, hotspot, and USB
   wsPort: 8765,
 };

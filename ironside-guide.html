@@ -110,16 +110,20 @@
 
   <p style="font-size:0.85rem; color:#888; margin-bottom:8px;">SSH into the Pi, then:</p>
 
-  <p style="font-size:0.85rem; color:#ccc; margin-top:12px;">Camera preview + calibration (run on Mac browser at <code>:8080</code>):</p>
+  <p style="font-size:0.85rem; color:#ccc; margin-top:12px;">Camera preview + calibration:</p>
   <div class="cmd-block">python3 ~/preview.py</div>
+  <p style="font-size:0.8rem; color:#666; margin-top:4px;">Then open in Mac browser:
+  WiFi / Hotspot → <code>http://fraspberry2.local:8080</code>
+  USB → <code>http://10.12.194.1:8080</code></p>
 
-  <p style="font-size:0.85rem; color:#ccc; margin-top:12px;">IR tracker + WebSocket server (game mode):</p>
+  <p style="font-size:0.85rem; color:#ccc; margin-top:16px;">IR tracker + WebSocket server (game mode):</p>
   <div class="cmd-block">python3 ~/ir_detect.py</div>
+  <p style="font-size:0.8rem; color:#666; margin-top:4px;">Then open <code>shooting-gallery.html</code> in your browser. <code>config.js</code> uses <code>fraspberry2.local</code> — works on all three connection modes. For USB, temporarily change <code>piHost</code> to <code>10.12.194.1</code>.</p>
 
-  <p style="font-size:0.85rem; color:#ccc; margin-top:12px;">Stop either script:</p>
+  <p style="font-size:0.85rem; color:#ccc; margin-top:16px;">Stop either script:</p>
   <div class="cmd-block">Ctrl + C</div>
 
-  <p style="font-size:0.85rem; color:#ccc; margin-top:12px;">If the script is running in the background and won't stop:</p>
+  <p style="font-size:0.85rem; color:#ccc; margin-top:12px;">If the script won't stop:</p>
   <div class="cmd-block">pkill -f preview.py
 pkill -f ir_detect.py</div>
 
