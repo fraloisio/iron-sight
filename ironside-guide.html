@@ -116,6 +116,52 @@
   <p style="font-size:0.85rem; color:#ccc; margin-top:12px;">IR tracker + WebSocket server (game mode):</p>
   <div class="cmd-block">python3 ~/ir_detect.py</div>
 
+  <p style="font-size:0.85rem; color:#ccc; margin-top:12px;">Stop either script:</p>
+  <div class="cmd-block">Ctrl + C</div>
+
+  <p style="font-size:0.85rem; color:#ccc; margin-top:12px;">If the script is running in the background and won't stop:</p>
+  <div class="cmd-block">pkill -f preview.py
+pkill -f ir_detect.py</div>
+
+  <hr class="divider">
+
+  <!-- Field notes -->
+  <h3>Field notes</h3>
+
+  <div style="display:flex; flex-direction:column; gap:10px; margin-top:0">
+
+    <div class="info-item">
+      <div class="info-label">Ideal shooting distance</div>
+      <div style="font-size:0.9rem; color:#e0e0e0; margin-top:4px;">3–4 metres from the screen. Too close and the IR clusters overlap; too far and the LEDs become too dim to detect reliably.</div>
+    </div>
+
+    <div class="info-item">
+      <div class="info-label">Light sources</div>
+      <div style="font-size:0.9rem; color:#e0e0e0; margin-top:4px;">Keep strong natural or artificial light <strong style="color:#ff9800">away from the camera lens</strong>. Direct sunlight or spotlights aimed at the scope will saturate the sensor and break tracking.</div>
+    </div>
+
+    <div class="info-item">
+      <div class="info-label">Projection vs. camera</div>
+      <div style="font-size:0.9rem; color:#e0e0e0; margin-top:4px;">The projector light does <strong style="color:#4caf50">not</strong> interfere with the IR camera — the camera only sees near-infrared wavelengths that projectors don't emit.</div>
+    </div>
+
+    <div class="info-item">
+      <div class="info-label">Calibration</div>
+      <div style="font-size:0.9rem; color:#e0e0e0; margin-top:4px;">Always calibrate with the gun pointing at the four corners of the <em>actual projection area</em>, not the physical screen edge. Re-calibrate any time the camera or projector moves.</div>
+    </div>
+
+    <div class="info-item">
+      <div class="info-label">Flickering crosshair</div>
+      <div style="font-size:0.9rem; color:#e0e0e0; margin-top:4px;">Use <code>preview.py</code> to raise the <strong>Alpha</strong> slider for snappier response, or lower it for smoother movement. If the crosshair jumps, raise <strong>Min Brightness</strong> to filter out ambient IR noise.</div>
+    </div>
+
+    <div class="info-item">
+      <div class="info-label">Saving tuned parameters</div>
+      <div style="font-size:0.9rem; color:#e0e0e0; margin-top:4px;">After tuning sliders in <code>preview.py</code>, hit <strong>Save Params</strong> in the browser. Settings are stored in <code>~/params.json</code> and loaded automatically on next run.</div>
+    </div>
+
+  </div>
+
   <hr class="divider">
 
   <!-- Quick reference -->
