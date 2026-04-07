@@ -5,29 +5,21 @@ import websockets
 import json
 import threading
 import os
-import subprocess
 import time
 from picamera2 import Picamera2
 import RPi.GPIO as GPIO
 
 # ── GPIO setup ────────────────────────────────────────────
-TRIGGER_PIN  = 22   # Beige — microswitch NO, fires shoot
-SHUTDOWN_PIN = 3    # Orange — momentary press → shutdown (also wakes from halt)
+TRIGGER_PIN = 22   # Beige — microswitch NO, fires shoot
 
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(TRIGGER_PIN,  GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(SHUTDOWN_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(TRIGGER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 def on_trigger(channel):
     latest_pos['shoot'] = True
     print('Trigger fired')
 
-def on_shutdown(channel):
-    print('Shutdown button pressed — halting Pi...')
-    subprocess.run(['sudo', 'shutdown', 'now'])
-
-GPIO.add_event_detect(TRIGGER_PIN,  GPIO.FALLING, callback=on_trigger,  bouncetime=200)
-GPIO.add_event_detect(SHUTDOWN_PIN, GPIO.FALLING, callback=on_shutdown, bouncetime=2000)
+GPIO.add_event_detect(TRIGGER_PIN, GPIO.FALLING, callback=on_trigger, bouncetime=200)
 
 # ── Load calibration if it exists ────────────────────────
 CAL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'calibration.json')
