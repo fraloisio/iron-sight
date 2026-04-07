@@ -28,6 +28,7 @@ def scan_networks():
     return networks
 
 def connect_wifi(ssid, password):
+    subprocess.run(['nmcli', 'connection', 'down', 'Hotspot'], capture_output=True)
     result = subprocess.run(
         ['nmcli', 'device', 'wifi', 'connect', ssid, 'password', password],
         capture_output=True, text=True, timeout=30
