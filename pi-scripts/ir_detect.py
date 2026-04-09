@@ -10,14 +10,25 @@ from picamera2 import Picamera2
 import RPi.GPIO as GPIO
 
 # ── GPIO setup ────────────────────────────────────────────
-TRIGGER_PIN = 22   # Beige — microswitch NO, fires shoot
+TRIGGER_PIN  = 22   # Brown — microswitch NO, fires shoot
+RECOIL_PIN   = 27   # White — relay IN, drives solenoid
+RECOIL_ENABLED = True
+RECOIL_MS      = 50  # solenoid pulse duration in milliseconds
 
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(TRIGGER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(TRIGGER_PIN, GPIO.IN,  pull_up_down=GPIO.PUD_UP)
+GPIO.setup(RECOIL_PIN,  GPIO.OUT, initial=GPIO.LOW)
+
+def fire_recoil():
+    GPIO.output(RECOIL_PIN, GPIO.HIGH)
+    time.sleep(RECOIL_MS / 1000)
+    GPIO.output(RECOIL_PIN, GPIO.LOW)
 
 def on_trigger(channel):
     latest_pos['shoot'] = True
     print('Trigger fired')
+    if RECOIL_ENABLED:
+        threading.Thread(target=fire_recoil, daemon=True).start()
 
 GPIO.add_event_detect(TRIGGER_PIN, GPIO.FALLING, callback=on_trigger, bouncetime=200)
 
