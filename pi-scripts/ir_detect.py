@@ -13,7 +13,7 @@ import RPi.GPIO as GPIO
 TRIGGER_PIN  = 22   # Brown — microswitch NO, fires shoot
 RECOIL_PIN   = 27   # White — relay IN, drives solenoid
 RECOIL_ENABLED = True
-RECOIL_MS      = 50  # solenoid pulse duration in milliseconds
+RECOIL_MS      = 300  # solenoid pulse duration in milliseconds
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(TRIGGER_PIN, GPIO.IN,  pull_up_down=GPIO.PUD_UP)
@@ -30,7 +30,7 @@ def on_trigger(channel):
     if RECOIL_ENABLED:
         threading.Thread(target=fire_recoil, daemon=True).start()
 
-GPIO.add_event_detect(TRIGGER_PIN, GPIO.FALLING, callback=on_trigger, bouncetime=200)
+GPIO.add_event_detect(TRIGGER_PIN, GPIO.FALLING, callback=on_trigger, bouncetime=80)
 
 # ── Load calibration if it exists ────────────────────────
 CAL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'calibration.json')

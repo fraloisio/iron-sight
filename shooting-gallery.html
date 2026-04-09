@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Test</title>
+<title>Iron Sight</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap" rel="stylesheet">
 <script src="config.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -13,7 +15,7 @@
        ─────────────────────────────────────────── */
     width: 100vw; height: 100vh;
     overflow: hidden; cursor: none;
-    font-family: monospace;
+    font-family: 'Black Ops One', monospace;
   }
   #crosshair {
     position: fixed; pointer-events: none; z-index: 100;
@@ -50,23 +52,26 @@
     position: fixed; top: 14px; left: 0; right: 0;
     display: flex; justify-content: center; gap: 40px;
     z-index: 300; pointer-events: none;
-    color: rgba(255,255,255,0.45); font-size: 13px; letter-spacing: 2px;
+    color: rgba(255,255,255,0.7); font-size: 16px; letter-spacing: 3px;
+    font-family: 'Black Ops One', monospace;
   }
-  #hud span b { color: rgba(255,255,255,0.9); font-weight: normal; }
+  #hud span b { color: #f0c000; font-weight: normal; }
   .screen {
     position: fixed; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; z-index: 400;
-    background: rgba(0,0,0,0.82); color: #fff; gap: 20px;
+    background: rgba(0,0,0,0.88); color: #fff; gap: 28px;
   }
-  .screen h1 { font-size: 16px; letter-spacing: 5px; font-weight: normal; opacity: 0.8; }
-  .screen p  { font-size: 11px; letter-spacing: 2px; opacity: 0.35; }
+  .screen h1 { font-size: 96px; letter-spacing: 10px; font-weight: normal; opacity: 1; font-family: 'Black Ops One', monospace; }
+  .screen p  { font-size: 16px; letter-spacing: 4px; opacity: 0.75; }
+  .screen .end-stat { font-size: 28px; letter-spacing: 6px; opacity: 1; color: #fff; }
+  .screen .end-stat span { color: #f0c000; }
   .screen button {
-    background: none; border: 1px solid rgba(255,255,255,0.35);
-    color: rgba(255,255,255,0.75); font-family: monospace; font-size: 11px;
-    letter-spacing: 4px; padding: 9px 26px; cursor: pointer; margin-top: 6px;
-    transition: border-color 0.15s, color 0.15s;
+    background: none; border: 2px solid rgba(255,255,255,0.7);
+    color: #fff; font-family: 'Black Ops One', monospace; font-size: 18px;
+    letter-spacing: 6px; padding: 14px 40px; cursor: pointer; margin-top: 10px;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
   }
-  .screen button:hover { border-color: #fff; color: #fff; }
+  .screen button:hover { border-color: #f0c000; color: #f0c000; }
 </style>
 </head>
 <body>
@@ -78,13 +83,15 @@
   <span>TIME&nbsp;<b id="h-time">30</b></span>
 </div>
 <div class="screen" id="start-screen">
-  <h1>TEST</h1>
-  <p>click to shoot · aim for the centre</p>
+  <h1>IRON SIGHT</h1>
+  <p>aim for the centre · pull the trigger</p>
   <button id="start-btn">START</button>
 </div>
 <div class="screen" id="end-screen" style="display:none">
-  <h1>DONE</h1>
-  <p id="end-stats"></p>
+  <h1>FIRE CEASE</h1>
+  <p class="end-stat">SCORE &nbsp;<span id="end-score">0</span></p>
+  <p class="end-stat">HITS &nbsp;<span id="end-hits">0</span> &nbsp;·&nbsp; MISSES &nbsp;<span id="end-misses">0</span></p>
+  <p class="end-stat">ACCURACY &nbsp;<span id="end-acc">0</span>%</p>
   <button id="restart-btn">AGAIN</button>
 </div>
 <script>
@@ -390,8 +397,10 @@ function endGame() {
   targets.forEach(t=>{clearTimeout(t.autoRemove);t.el.remove();});
   targets=[];
   const acc=hits+misses>0?Math.round(hits/(hits+misses)*100):0;
-  document.getElementById('end-stats').textContent=
-    `score ${score}  ·  hits ${hits}  ·  misses ${misses}  ·  accuracy ${acc}%`;
+  document.getElementById('end-score').textContent=score;
+  document.getElementById('end-hits').textContent=hits;
+  document.getElementById('end-misses').textContent=misses;
+  document.getElementById('end-acc').textContent=acc;
   document.getElementById('end-screen').style.display='flex';
 }
 
@@ -415,7 +424,13 @@ function connectWS() {
     my = d.y * window.innerHeight;
     ch.style.left = mx + 'px';
     ch.style.top  = my + 'px';
-    if (d.shoot) shoot(mx, my);
+    if (d.shoot) {
+      const startScreen = document.getElementById('start-screen');
+      const endScreen   = document.getElementById('end-screen');
+      if (startScreen.style.display !== 'none') { startGame(); }
+      else if (endScreen.style.display !== 'none') { startGame(); }
+      else { shoot(mx, my); }
+    }
   };
   ws.onerror = () => console.warn('IR tracker not reachable — mouse fallback active');
   ws.onclose = () => {
