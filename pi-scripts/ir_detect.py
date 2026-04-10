@@ -30,7 +30,7 @@ def on_trigger(channel):
     if RECOIL_ENABLED:
         threading.Thread(target=fire_recoil, daemon=True).start()
 
-GPIO.add_event_detect(TRIGGER_PIN, GPIO.FALLING, callback=on_trigger, bouncetime=80)
+GPIO.add_event_detect(TRIGGER_PIN, GPIO.FALLING, callback=on_trigger, bouncetime=120)
 
 # ── Load calibration if it exists ────────────────────────
 CAL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'calibration.json')
@@ -107,6 +107,11 @@ def find_clusters(gray):
     top2 = sorted(blobs[:2], key=lambda b: b[1])
     lx, ly = top2[0][1], top2[0][2]
     rx, ry = top2[1][1], top2[1][2]
+    # Reject pairs that are too far apart — likely noise from different sources
+    # Max allowed distance between the two clusters: 60% of frame width
+    dist = ((rx - lx) ** 2 + (ry - ly) ** 2) ** 0.5
+    if dist > 320 * 0.6:
+        return None
     return ((lx + rx) / 2, (ly + ry) / 2)
 
 def to_screen(cx, cy, frame_w=320, frame_h=180):
