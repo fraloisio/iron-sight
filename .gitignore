@@ -30,3 +30,7 @@ venv/
 # Raspberry Pi / MicroPython build artifacts
 *.mpy
 build/
+
+# Pi SD card backups
+*.img.gz
+*.img

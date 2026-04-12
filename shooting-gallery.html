@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Iron Sight</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Allerta+Stencil&display=swap" rel="stylesheet">
 <script src="config.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -15,10 +15,10 @@
        ─────────────────────────────────────────── */
     width: 100vw; height: 100vh;
     overflow: hidden; cursor: none;
-    font-family: 'Black Ops One', monospace;
+    font-family: 'Allerta Stencil', monospace;
   }
   #crosshair {
-    position: fixed; pointer-events: none; z-index: 100;
+    position: fixed; pointer-events: none; z-index: 500;
     transform: translate(-50%, -50%); width: 44px; height: 44px;
   }
   #crosshair::before, #crosshair::after {
@@ -53,7 +53,7 @@
     display: flex; justify-content: center; gap: 40px;
     z-index: 300; pointer-events: none;
     color: rgba(255,255,255,0.7); font-size: 16px; letter-spacing: 3px;
-    font-family: 'Black Ops One', monospace;
+    font-family: 'Allerta Stencil', monospace;
   }
   #hud span b { color: #f0c000; font-weight: normal; }
   .screen {
@@ -61,13 +61,13 @@
     align-items: center; justify-content: center; z-index: 400;
     background: rgba(0,0,0,0.88); color: #fff; gap: 28px;
   }
-  .screen h1 { font-size: 96px; letter-spacing: 10px; font-weight: normal; opacity: 1; font-family: 'Black Ops One', monospace; }
+  .screen h1 { font-size: 96px; letter-spacing: 10px; font-weight: normal; opacity: 1; font-family: 'Allerta Stencil', monospace; text-transform: uppercase; }
   .screen p  { font-size: 16px; letter-spacing: 4px; opacity: 0.75; }
   .screen .end-stat { font-size: 28px; letter-spacing: 6px; opacity: 1; color: #fff; }
   .screen .end-stat span { color: #f0c000; }
   .screen button {
     background: none; border: 2px solid rgba(255,255,255,0.7);
-    color: #fff; font-family: 'Black Ops One', monospace; font-size: 18px;
+    color: #fff; font-family: 'Allerta Stencil', monospace; font-size: 18px;
     letter-spacing: 6px; padding: 14px 40px; cursor: pointer; margin-top: 10px;
     transition: border-color 0.15s, color 0.15s, background 0.15s;
   }
@@ -83,16 +83,17 @@
   <span>TIME&nbsp;<b id="h-time">30</b></span>
 </div>
 <div class="screen" id="start-screen">
-  <h1>IRON SIGHT</h1>
-  <p>aim for the centre · pull the trigger</p>
+  <h1>Missionens udstyr</h1>
+  <p>Skyd og ram start for at starte missionen</p>
   <button id="start-btn">START</button>
 </div>
 <div class="screen" id="end-screen" style="display:none">
-  <h1>FIRE CEASE</h1>
+  <h1>Missionen er slut</h1>
   <p class="end-stat">SCORE &nbsp;<span id="end-score">0</span></p>
   <p class="end-stat">HITS &nbsp;<span id="end-hits">0</span> &nbsp;·&nbsp; MISSES &nbsp;<span id="end-misses">0</span></p>
   <p class="end-stat">ACCURACY &nbsp;<span id="end-acc">0</span>%</p>
-  <button id="restart-btn">AGAIN</button>
+  <button id="restart-btn">Start forfra</button>
+  <p style="margin-top:12px;font-size:0.85em;opacity:0.6;">Tryk på aftrækkeren for at skyde</p>
 </div>
 <script>
 const CFG = {

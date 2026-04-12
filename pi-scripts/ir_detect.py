@@ -32,6 +32,14 @@ def on_trigger(channel):
 
 GPIO.add_event_detect(TRIGGER_PIN, GPIO.FALLING, callback=on_trigger, bouncetime=120)
 
+# ── Load params (tuned in preview.py) ────────────────────
+PARAMS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'params.json')
+_params = {'dilation': 9, 'min_bright': 180, 'alpha': 0.6, 'max_dot_dist': 192}
+if os.path.exists(PARAMS_PATH):
+    with open(PARAMS_PATH) as f:
+        _params.update(json.load(f))
+    print(f'Params loaded from {PARAMS_PATH}')
+
 # ── Load calibration if it exists ────────────────────────
 CAL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'calibration.json')
 H = None
@@ -80,18 +88,19 @@ async def main():
         await broadcast()
 
 # ── IR dot detection ──────────────────────────────────────
-DILATION_PX = 9
-MIN_BRIGHT  = 180
-
 smooth_bright = {'v': 200.0}  # EMA-smoothed brightness
 
 def find_clusters(gray):
+    min_bright   = _params['min_bright']
+    dilation     = _params['dilation']
+    max_dot_dist = _params['max_dot_dist']
+
     brightest = int(gray.max())
-    if brightest < MIN_BRIGHT:
+    if brightest < min_bright:
         return None
     smooth_bright['v'] = 0.1 * brightest + 0.9 * smooth_bright['v']
     _, thresh = cv2.threshold(gray, int(smooth_bright['v'] * 0.75), 255, cv2.THRESH_BINARY)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (DILATION_PX, DILATION_PX))
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (dilation, dilation))
     dilated = cv2.dilate(thresh, kernel)
     contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     blobs = []
@@ -107,14 +116,12 @@ def find_clusters(gray):
     top2 = sorted(blobs[:2], key=lambda b: b[1])
     lx, ly = top2[0][1], top2[0][2]
     rx, ry = top2[1][1], top2[1][2]
-    # Reject pairs that are too far apart — likely noise from different sources
-    # Max allowed distance between the two clusters: 60% of frame width
     dist = ((rx - lx) ** 2 + (ry - ly) ** 2) ** 0.5
-    if dist > 320 * 0.6:
+    if dist > max_dot_dist:
         return None
     return ((lx + rx) / 2, (ly + ry) / 2)
 
-def to_screen(cx, cy, frame_w=320, frame_h=180):
+def to_screen(cx, cy, frame_w=320, frame_h=240):
     if H is not None:
         pt = np.float32([[[cx, cy]]])
         out = cv2.perspectiveTransform(pt, H)
@@ -124,14 +131,13 @@ def to_screen(cx, cy, frame_w=320, frame_h=180):
     return max(0.0, min(1.0, nx)), max(0.0, min(1.0, ny))
 
 # ── Camera loop ───────────────────────────────────────────
-ALPHA = 0.6
 smooth = {'x': 0.5, 'y': 0.5}
 
 def camera_loop():
     global latest_pos
     picam2 = Picamera2()
     picam2.configure(picam2.create_video_configuration(
-        main={"size": (320, 180), "format": "RGB888"}
+        main={"size": (320, 240), "format": "RGB888"}
     ))
     picam2.start()
     picam2.set_controls({"AeEnable": False, "ExposureTime": 5000, "AnalogueGain": 2.0})
@@ -144,11 +150,12 @@ def camera_loop():
         mp = find_clusters(gray)
         if mp:
             nx, ny = to_screen(mp[0], mp[1])
-            smooth['x'] = ALPHA * nx + (1 - ALPHA) * smooth['x']
-            smooth['y'] = ALPHA * ny + (1 - ALPHA) * smooth['y']
+            alpha = _params['alpha']
+            smooth['x'] = alpha * nx + (1 - alpha) * smooth['x']
+            smooth['y'] = alpha * ny + (1 - alpha) * smooth['y']
             latest_pos['x'] = round(smooth['x'], 3)
             latest_pos['y'] = round(smooth['y'], 3)
-            print(f'cam:({mp[0]:.0f},{mp[1]:.0f})  aim:({smooth["x"]:.3f},{smooth["y"]:.3f})')
+            print(f'cam:({mp[0]:.0f},{mp[1]:.0f})/320x240  aim:({smooth["x"]:.3f},{smooth["y"]:.3f})')
 
 print('Starting IR tracker + WebSocket server...')
 cam_thread = threading.Thread(target=camera_loop, daemon=True)

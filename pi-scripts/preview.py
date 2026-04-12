@@ -17,7 +17,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 from picamera2 import Picamera2
 
-FRAME_W, FRAME_H = 320, 180
+FRAME_W, FRAME_H = 320, 240
 CAL_PATH    = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'calibration.json')
 PARAMS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'params.json')
 M = 0.2
@@ -28,7 +28,7 @@ frame_lock  = threading.Lock()
 cal_points = {}
 cal_lock   = threading.Lock()
 
-smooth = {'x': 160.0, 'y': 90.0}
+smooth = {'x': 160.0, 'y': 120.0}
 smooth_bright = {'v': 200.0}
 
 # ── Tunable params (live, no restart needed) ──────────────
@@ -38,6 +38,7 @@ params = {
     'min_bright': 180,
     'dilation':   9,
     'alpha':      0.6,
+    'max_dot_dist': 192,  # max px between the two IR clusters (60% of frame width)
 }
 if os.path.exists(PARAMS_PATH):
     with open(PARAMS_PATH) as f:
@@ -54,8 +55,9 @@ stats_lock = threading.Lock()
 
 def find_clusters(gray):
     with params_lock:
-        min_bright = params['min_bright']
-        dilation   = params['dilation']
+        min_bright    = params['min_bright']
+        dilation      = params['dilation']
+        max_dot_dist  = params['max_dot_dist']
 
     brightest = int(gray.max())
     with stats_lock:
@@ -98,6 +100,12 @@ def find_clusters(gray):
     top2 = sorted(blobs[:2], key=lambda b: b[1])
     _, lx, ly = top2[0]
     _, rx, ry = top2[1]
+    dist = ((rx - lx) ** 2 + (ry - ly) ** 2) ** 0.5
+    if dist > max_dot_dist:
+        with stats_lock:
+            stats['blobs'] = len(blobs)
+            stats['locked'] = False
+        return None, brightest
     mid = ((lx + rx) // 2, (ly + ry) // 2)
     return (lx, ly), (rx, ry), mid, brightest
 
@@ -242,11 +250,6 @@ HTML = """<!DOCTYPE html>
            oninput="updateParam('gain', this.value)">
   </div>
   <div class="section">
-    <label>Min brightness <span class="val" id="v-min_bright">180</span></label>
-    <input type="range" id="s-min_bright" min="80" max="250" step="5" value="180"
-           oninput="updateParam('min_bright', this.value)">
-  </div>
-  <div class="section">
     <label>Dilation px <span class="val" id="v-dilation">9</span></label>
     <input type="range" id="s-dilation" min="3" max="20" step="1" value="9"
            oninput="updateParam('dilation', this.value)">
@@ -255,6 +258,11 @@ HTML = """<!DOCTYPE html>
     <label>Smoothing alpha <span class="val" id="v-alpha">0.6</span></label>
     <input type="range" id="s-alpha" min="0.05" max="1" step="0.05" value="0.6"
            oninput="updateParam('alpha', this.value)">
+  </div>
+  <div class="section">
+    <label>Max dot distance px <span class="val" id="v-max_dot_dist">192</span></label>
+    <input type="range" id="s-max_dot_dist" min="20" max="320" step="5" value="192"
+           oninput="updateParam('max_dot_dist', this.value)">
   </div>
 
   <h2>LIVE STATS</h2>
