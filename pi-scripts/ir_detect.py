@@ -34,7 +34,7 @@ GPIO.add_event_detect(TRIGGER_PIN, GPIO.FALLING, callback=on_trigger, bouncetime
 
 # ── Load params (tuned in preview.py) ────────────────────
 PARAMS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'params.json')
-_params = {'dilation': 9, 'min_bright': 180, 'alpha': 0.6, 'max_dot_dist': 192}
+_params = {'dilation': 9, 'min_bright': 180, 'alpha': 0.6, 'max_dot_dist': 192, 'deadzone': 0.004}
 if os.path.exists(PARAMS_PATH):
     with open(PARAMS_PATH) as f:
         _params.update(json.load(f))
@@ -137,7 +137,9 @@ def camera_loop():
     global latest_pos
     picam2 = Picamera2()
     picam2.configure(picam2.create_video_configuration(
-        main={"size": (320, 240), "format": "RGB888"}
+        main={"size": (320, 240), "format": "RGB888"},
+        sensor={"output_size": (1640, 1232), "bit_depth": 10},
+        buffer_count=2, queue=False
     ))
     picam2.start()
     picam2.set_controls({"AeEnable": False, "ExposureTime": 5000, "AnalogueGain": 2.0})
@@ -153,8 +155,11 @@ def camera_loop():
             alpha = _params['alpha']
             smooth['x'] = alpha * nx + (1 - alpha) * smooth['x']
             smooth['y'] = alpha * ny + (1 - alpha) * smooth['y']
-            latest_pos['x'] = round(smooth['x'], 3)
-            latest_pos['y'] = round(smooth['y'], 3)
+            deadzone = _params['deadzone']
+            if abs(smooth['x'] - latest_pos['x']) > deadzone or \
+               abs(smooth['y'] - latest_pos['y']) > deadzone:
+                latest_pos['x'] = round(smooth['x'], 3)
+                latest_pos['y'] = round(smooth['y'], 3)
             print(f'cam:({mp[0]:.0f},{mp[1]:.0f})/320x240  aim:({smooth["x"]:.3f},{smooth["y"]:.3f})')
 
 print('Starting IR tracker + WebSocket server...')

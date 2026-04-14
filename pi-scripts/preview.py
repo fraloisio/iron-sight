@@ -32,21 +32,39 @@ smooth = {'x': 160.0, 'y': 120.0}
 smooth_bright = {'v': 200.0}
 
 # ── Tunable params (live, no restart needed) ──────────────
-params = {
-    'exposure':   5000,
-    'gain':       2.0,
-    'min_bright': 180,
-    'dilation':   9,
-    'alpha':      0.6,
-    'max_dot_dist': 192,  # max px between the two IR clusters (60% of frame width)
+FACTORY_DEFAULTS = {
+    'exposure':     5000,
+    'gain':         2.0,
+    'zoom':         1.0,
+    'min_bright':   180,
+    'dilation':     9,
+    'alpha':        0.6,
+    'deadzone':     0.004,
+    'max_dot_dist': 192,
 }
+params = dict(FACTORY_DEFAULTS)
 if os.path.exists(PARAMS_PATH):
     with open(PARAMS_PATH) as f:
         params.update(json.load(f))
     print(f'Params loaded from {PARAMS_PATH}')
 params_lock   = threading.Lock()
-camera_ref    = {'picam2': None}
+camera_ref    = {'picam2': None, 'base_crop': None}
 apply_camera  = threading.Event()  # set when exposure/gain need updating
+
+
+def apply_zoom_crop(picam2, zoom):
+    try:
+        base = camera_ref['base_crop']
+        if base is None:
+            return
+        bx, by, bw, bh = base
+        cw = int(bw / zoom)
+        ch = int(bh / zoom)
+        x  = bx + (bw - cw) // 2
+        y  = by + (bh - ch) // 2
+        picam2.set_controls({'ScalerCrop': (x, y, cw, ch)})
+    except Exception as e:
+        print(f'ScalerCrop failed: {e}')
 
 # live stats for the UI
 stats = {'bright': 0, 'blobs': 0, 'locked': False}
@@ -114,15 +132,22 @@ def camera_loop():
     global latest_jpeg, smooth
     picam2 = Picamera2()
     picam2.configure(picam2.create_video_configuration(
-        main={"size": (FRAME_W, FRAME_H), "format": "RGB888"}
+        main={"size": (FRAME_W, FRAME_H), "format": "RGB888"},
+        sensor={"output_size": (1640, 1232), "bit_depth": 10},
+        buffer_count=2, queue=False
     ))
     picam2.start()
     with params_lock:
         picam2.set_controls({"AeEnable": False,
                               "ExposureTime": params['exposure'],
                               "AnalogueGain": params['gain']})
+        zoom = params['zoom']
+    time.sleep(0.5)
+    meta = picam2.capture_metadata()
+    camera_ref['base_crop'] = meta.get('ScalerCrop')
     camera_ref['picam2'] = picam2
-    time.sleep(1)
+    apply_zoom_crop(picam2, zoom)
+    time.sleep(0.5)
 
     while True:
         # Apply camera setting changes if requested
@@ -132,6 +157,8 @@ def camera_loop():
                 picam2.set_controls({"AeEnable": False,
                                      "ExposureTime": params['exposure'],
                                      "AnalogueGain": params['gain']})
+                zoom = params['zoom']
+            apply_zoom_crop(picam2, zoom)
 
         with params_lock:
             alpha = params['alpha']
@@ -195,13 +222,37 @@ HTML = """<!DOCTYPE html>
     position:fixed; top:0; right:0; bottom:0; width:220px;
     background:rgba(0,0,0,0.82); border-left:1px solid #333;
     display:flex; flex-direction:column; gap:0; overflow-y:auto;
+    z-index: 10; transition: width 0.2s ease;
   }
+  #panel.collapsed { width: 0; border-left: none; }
+  #panel.collapsed .panel-content { display: none; }
+  #panel-toggle {
+    position:fixed; top:50%; right:220px;
+    transform: translateY(-50%);
+    width:16px; height:48px;
+    background:rgba(0,0,0,0.82); border:1px solid #333; border-right:none;
+    border-radius:4px 0 0 4px;
+    cursor:pointer; z-index:11;
+    display:flex; align-items:center; justify-content:center;
+    color:#f80; font-size:11px; transition: right 0.2s ease;
+  }
+  #panel-toggle.collapsed { right: 0; }
   #panel h2 { color:#f80; font-size:11px; padding:8px 10px 4px; border-bottom:1px solid #333; }
 
   .section { padding:8px 10px; border-bottom:1px solid #222; }
   .section label { color:#aaa; font-size:10px; display:block; margin-bottom:3px; }
   .section .val  { color:#fff; font-size:11px; float:right; }
   input[type=range] { width:100%; accent-color:#f80; cursor:pointer; }
+
+  .tip { display:inline-block; margin-left:4px; cursor:default; font-size:10px; color:#555; }
+  .tip:hover { color:#f80; }
+  #tooltip {
+    display:none; position:fixed;
+    background:rgba(20,20,20,0.97); color:#ccc;
+    font-size:10px; line-height:1.5;
+    padding:7px 9px; border-radius:4px; border:1px solid #444;
+    width:200px; white-space:normal; pointer-events:none; z-index:9999;
+  }
 
   #stats { background:rgba(0,0,0,0.5); padding:8px 10px; font-size:11px; }
   .stat  { display:flex; justify-content:space-between; padding:2px 0; }
@@ -234,33 +285,46 @@ HTML = """<!DOCTYPE html>
 </head>
 <body>
 <img src="/stream">
+<div id="tooltip"></div>
 <div id="status">Aim at a corner target, then click its button.</div>
+<div id="panel-toggle" onclick="togglePanel()">›</div>
 
 <div id="panel">
+<div class="panel-content">
   <h2>DETECTION PARAMS</h2>
 
   <div class="section">
-    <label>Exposure (µs) <span class="val" id="v-exposure">5000</span></label>
+    <label>Exposure (µs) <span class="val" id="v-exposure">5000</span><span class="tip" onmouseenter="showTip(this,event)" onmouseleave="hideTip()" data-tip="How long the sensor stays open per frame. Lower = darker image, isolates bright IR dots from ambient light. Try 500–2000µs for clean detection.">ⓘ</span></label>
     <input type="range" id="s-exposure" min="500" max="15000" step="500" value="5000"
            oninput="updateParam('exposure', this.value)">
   </div>
   <div class="section">
-    <label>Gain <span class="val" id="v-gain">2.0</span></label>
+    <label>Gain <span class="val" id="v-gain">2.0</span><span class="tip" onmouseenter="showTip(this,event)" onmouseleave="hideTip()" data-tip="Amplifies the sensor signal. Higher = brighter but noisier. Keep low once exposure is tuned.">ⓘ</span></label>
     <input type="range" id="s-gain" min="1" max="8" step="0.5" value="2"
            oninput="updateParam('gain', this.value)">
   </div>
   <div class="section">
-    <label>Dilation px <span class="val" id="v-dilation">9</span></label>
+    <label>Zoom <span class="val" id="v-zoom">1.0</span>×<span class="tip" onmouseenter="showTip(this,event)" onmouseleave="hideTip()" data-tip="Digital zoom into the center of the frame. 1.0 = full FOV. Recalibrate after changing.">ⓘ</span></label>
+    <input type="range" id="s-zoom" min="1" max="3" step="0.1" value="1"
+           oninput="updateParam('zoom', this.value)">
+  </div>
+  <div class="section">
+    <label>Dilation px <span class="val" id="v-dilation">9</span><span class="tip" onmouseenter="showTip(this,event)" onmouseleave="hideTip()" data-tip="Expands bright blobs by N pixels before detection. Helps merge nearby LED spots into one cluster. Too high = merges both IR clusters into one blob.">ⓘ</span></label>
     <input type="range" id="s-dilation" min="3" max="20" step="1" value="9"
            oninput="updateParam('dilation', this.value)">
   </div>
   <div class="section">
-    <label>Smoothing alpha <span class="val" id="v-alpha">0.6</span></label>
+    <label>Smoothing alpha <span class="val" id="v-alpha">0.6</span><span class="tip" onmouseenter="showTip(this,event)" onmouseleave="hideTip()" data-tip="How quickly the crosshair follows the IR bar. 1.0 = instant but jittery. 0.1 = very smooth but laggy. 0.5–0.7 is a good balance.">ⓘ</span></label>
     <input type="range" id="s-alpha" min="0.05" max="1" step="0.05" value="0.6"
            oninput="updateParam('alpha', this.value)">
   </div>
   <div class="section">
-    <label>Max dot distance px <span class="val" id="v-max_dot_dist">192</span></label>
+    <label>Deadzone <span class="val" id="v-deadzone">0.004</span><span class="tip" onmouseenter="showTip(this,event)" onmouseleave="hideTip()" data-tip="Minimum movement before the crosshair updates. Higher = rock-solid when still, less sensitive to tiny movements. Lower = more responsive but may wobble.">ⓘ</span></label>
+    <input type="range" id="s-deadzone" min="0" max="0.03" step="0.001" value="0.004"
+           oninput="updateParam('deadzone', this.value)">
+  </div>
+  <div class="section">
+    <label>Max dot distance px <span class="val" id="v-max_dot_dist">192</span><span class="tip" onmouseenter="showTip(this,event)" onmouseleave="hideTip()" data-tip="Maximum pixel distance allowed between the two IR clusters. Rejects noise sources that are too far apart to be the Wii sensor bar.">ⓘ</span></label>
     <input type="range" id="s-max_dot_dist" min="20" max="320" step="5" value="192"
            oninput="updateParam('max_dot_dist', this.value)">
   </div>
@@ -272,7 +336,10 @@ HTML = """<!DOCTYPE html>
     <div class="stat"><span>Status</span><b id="st-locked">—</b></div>
   </div>
 
-  <button id="saveparams" onclick="saveParams()" style="margin:8px 10px 0;">SAVE PARAMS</button>
+  <div style="display:flex;gap:6px;margin:8px 10px 0;">
+    <button id="saveparams" onclick="saveParams()" style="flex:1">SAVE PARAMS</button>
+    <button id="resetparams" onclick="resetParams()" style="flex:1;border-color:#f44;color:#f44;">RESET</button>
+  </div>
 
   <h2>CALIBRATION</h2>
   <div id="cal">
@@ -284,10 +351,27 @@ HTML = """<!DOCTYPE html>
     <button id="reset" onclick="resetCal()">RESET / START OVER</button>
   </div>
 </div>
+</div>
 
 <script>
 const status = document.getElementById('status');
 function setStatus(msg, type) { status.textContent = msg; status.className = type || ''; }
+
+// ── Tooltips ──
+const _tt = document.getElementById('tooltip');
+function showTip(el, e) {
+  _tt.textContent = el.dataset.tip;
+  _tt.style.display = 'block';
+  const r = el.getBoundingClientRect();
+  const ttW = 200, ttH = _tt.offsetHeight;
+  let left = r.right - ttW;
+  let top  = r.bottom + 4;
+  if (left < 4) left = 4;
+  if (top + ttH > window.innerHeight - 4) top = r.top - ttH - 4;
+  _tt.style.left = left + 'px';
+  _tt.style.top  = top  + 'px';
+}
+function hideTip() { _tt.style.display = 'none'; }
 
 // ── Live stats polling ──
 async function pollStats() {
@@ -360,6 +444,47 @@ async function save() {
     }
   } catch(e) { setStatus('✗ Request failed.', 'err'); }
 }
+
+// ── Panel toggle ──
+function togglePanel() {
+  const p = document.getElementById('panel');
+  const t = document.getElementById('panel-toggle');
+  p.classList.toggle('collapsed');
+  t.classList.toggle('collapsed');
+  t.textContent = p.classList.contains('collapsed') ? '‹' : '›';
+}
+
+// ── Load last-saved params into sliders on page load ──
+const PARAM_FIELDS = ['exposure','gain','zoom','dilation','min_bright','alpha','deadzone','max_dot_dist'];
+async function loadParams() {
+  try {
+    const p = await fetch('/params').then(r => r.json());
+    PARAM_FIELDS.forEach(k => {
+      const s = document.getElementById('s-' + k);
+      const v = document.getElementById('v-' + k);
+      if (s && p[k] !== undefined) s.value = p[k];
+      if (v && p[k] !== undefined) v.textContent = parseFloat(p[k]);
+    });
+  } catch(e) {}
+}
+
+// ── Reset to factory defaults ──
+async function resetParams() {
+  try {
+    const p = await fetch('/resetparams').then(r => r.json());
+    PARAM_FIELDS.forEach(k => {
+      const s = document.getElementById('s-' + k);
+      const v = document.getElementById('v-' + k);
+      if (s && p[k] !== undefined) s.value = p[k];
+      if (v && p[k] !== undefined) v.textContent = parseFloat(p[k]);
+    });
+    const btn = document.getElementById('resetparams');
+    btn.textContent = '✓ RESET';
+    setTimeout(() => btn.textContent = 'RESET', 2000);
+  } catch(e) {}
+}
+
+document.addEventListener('DOMContentLoaded', loadParams);
 </script>
 </body>
 </html>"""
@@ -426,11 +551,15 @@ class Handler(BaseHTTPRequestHandler):
                     if key in ('exposure', 'min_bright', 'dilation'):
                         val = int(val)
                     params[key] = val
-                    if key in ('exposure', 'gain'):
+                    if key in ('exposure', 'gain', 'zoom'):
                         camera_changed = True
                 if camera_changed:
                     apply_camera.set()
             self.send_json({'ok': True})
+
+        elif parsed.path == '/params':
+            with params_lock:
+                self.send_json(dict(params))
 
         elif parsed.path == '/saveparams':
             with params_lock:
@@ -438,6 +567,18 @@ class Handler(BaseHTTPRequestHandler):
             with open(PARAMS_PATH, 'w') as f:
                 json.dump(data, f, indent=2)
             self.send_json({'ok': True})
+
+        elif parsed.path == '/resetparams':
+            with params_lock:
+                params.update(FACTORY_DEFAULTS)
+                camera_changed = True
+            if camera_changed:
+                apply_camera.set()
+            with params_lock:
+                zoom = params['zoom']
+            if camera_ref['picam2']:
+                apply_zoom_crop(camera_ref['picam2'], zoom)
+            self.send_json(dict(FACTORY_DEFAULTS))
 
         elif parsed.path == '/reset':
             with cal_lock:
