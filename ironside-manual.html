@@ -146,6 +146,7 @@
   <ul>
     <li class="section-label">Introduction</li>
     <li><a href="#overview">How it works</a></li>
+    <li><a href="#quickstart">Quick start</a></li>
     <li class="section-label">Getting started</li>
     <li><a href="#requirements">Requirements</a></li>
     <li><a href="#starting-device">Starting the device</a></li>
@@ -167,18 +168,48 @@
     <p>A step-by-step guide to setting up, calibrating, and running the Iron Sight interactive shooting gallery installation. No prior knowledge of the project is assumed.</p>
   </div>
 
+  <!-- ── QUICK START ── -->
+  <section id="quickstart">
+    <h2>Quick start</h2>
+    <p>Already set up before? Here's the full session in one place — no explanations, just the commands.</p>
+
+    <h3>1 — Power on</h3>
+    <p>Connect the scope to the power bank (PWR port). Press the yellow button. Wait ~30 s for the green LED to settle.</p>
+
+    <h3>2 — Connect to same network</h3>
+    <p>If the scope is already on a known network, connect your laptop to the same one. If not, connect to <code>ironside</code> (password: <code>ironsight</code>), use the captive portal to pick a network, then rejoin it on your laptop.</p>
+
+    <h3>3 — SSH in</h3>
+    <div class="cmd">ssh admin@scope.local</div>
+    <p>Password: <code>ironsight</code></p>
+
+    <h3>4 — Start the tracker</h3>
+    <div class="cmd">pkill -f preview.py; pkill -f ir_detect.py; python3 ~/ir_detect.py</div>
+    <p>You should see <code>WebSocket server running on port 8765</code> and then aim data printing as you point the rifle at the sensor bar.</p>
+
+    <h3>5 — Open the game</h3>
+    <p>Open <code>shooting-gallery.html</code> in a browser on your laptop. Go full-screen. The crosshair should respond immediately.</p>
+
+    <div class="callout warning">
+      <span class="icon">⚠️</span>
+      <div><strong>Moved the projector or sensor bar since last time?</strong> Recalibrate before playing — run <code>python3 ~/preview.py</code> and redo the four-corner calibration, then restart with <code>ir_detect.py</code>.</div>
+    </div>
+  </section>
+
   <!-- ── OVERVIEW ── -->
   <section id="overview">
     <h2>How it works</h2>
 
-    <p>Iron Sight is an interactive shooting simulation that uses <strong>infrared light tracking</strong> — the same technology found inside every TV remote control — to detect where a rifle is pointing in real time. When you aim the rifle at the projected screen and pull the trigger, the system registers a shot at the exact position you were aiming at.</p>
+    <p>Iron Sight is an interactive shooting simulation that uses <strong>infrared light tracking</strong> — the same invisible light technology found in TV remote controls — combined with a <strong>NoIR camera</strong> and real-time computer vision to detect where a rifle is pointing at any given moment. When you aim at the projected screen and pull the trigger, the system registers a shot at the exact position you were aiming at.</p>
 
-    <p>There are no radio signals, no moving parts in the tracking system, and no sensors in the targets themselves. The entire tracking mechanism is self-contained inside the rifle scope.</p>
+    <p>The NoIR camera (a camera module with the infrared-blocking filter removed, allowing it to see wavelengths of light invisible to the human eye) sits inside the rifle scope and watches the screen. It feeds a continuous stream of frames to <strong>OpenCV</strong> — an open-source computer vision library — which scans each frame in real time, identifies the infrared light sources, and calculates the aim position. All of this runs on a credit-card-sized computer inside the scope, many times per second.</p>
 
-    <div class="img-placeholder">
-      <div class="ph-icon">📷</div>
-      <div class="ph-label">SCREENSHOT — The game in action</div>
-      <div class="ph-desc">Screenshot of shooting-gallery.html running in browser, crosshair visible on screen</div>
+    <div class="img-wrap">
+      <img src="images/splash-screen.jpg" alt="Iron Sight splash screen">
+    </div>
+    <div class="img-wrap" style="margin-top:12px;">
+      <img src="images/game-screenshot.jpg" alt="The game in action">
+      <div class="img-caption">The game running in a browser — crosshair follows the rifle's aim in real time.</div>
     </div>
 
     <h3>The components</h3>
@@ -212,8 +243,13 @@
     </div>
 
     <h3>How the tracking works</h3>
-    <p>The camera inside the scope looks toward the screen and sees the two infrared dots from the Wii sensor bar. By calculating the midpoint between the two dots — and how that midpoint shifts as the rifle moves — the software knows exactly which part of the screen the rifle is aimed at. A calibration step, performed once per installation, teaches the system the precise relationship between what the camera sees and where that corresponds to on the projected game screen.</p>
-    <p>All of this information travels over a local WiFi network — no internet connection required — to a browser-based game running on a nearby laptop.</p>
+    <p>The Wii sensor bar has three infrared LEDs on each end. The NoIR camera sees these as two distinct glowing blobs — one for each cluster. OpenCV locates each blob by finding its centroid (centre of mass) and computes the midpoint between the two. As the rifle moves, that midpoint shifts, and the software translates it into a screen coordinate. A calibration step, done once per installation, maps what the camera sees to the game's coordinate space using a perspective transform — so the result is accurate across the full projected area regardless of the projector angle or position.</p>
+    <p>This information travels over a local WiFi network — no internet connection required — to a browser-based game running on a nearby laptop.</p>
+
+    <div class="img-wrap" style="margin-top:16px;">
+      <img src="images/components.jpg" alt="Iron Sight components">
+      <div class="img-caption">The main components of the Iron Sight system.</div>
+    </div>
 
     <div class="callout tip">
       <span class="icon">💡</span>
@@ -224,12 +260,6 @@
   <!-- ── REQUIREMENTS ── -->
   <section id="requirements">
     <h2>Requirements</h2>
-
-    <div class="img-placeholder">
-      <div class="ph-icon">📷</div>
-      <div class="ph-label">IMAGE — All components laid out on a table</div>
-      <div class="ph-desc">Photo of rifle, scope unit, sensor bar, power bank, USB cables, laptop, and any accessories</div>
-    </div>
 
     <ul class="req-list">
       <li>
@@ -318,7 +348,7 @@
         <div class="step-body">
           <p><strong>On your laptop, open the WiFi settings and wait for a network called <code>ironside</code> to appear.</strong> This can take up to 30 seconds after the LED settles. If the rifle scope has been connected to a WiFi network before and that network is in range, it will connect to it automatically and the <code>ironside</code> hotspot will not appear — skip to the next section.</p>
           <div class="img-wrap">
-            <img src="images/wifi-a.png" alt="ironside network visible in macOS WiFi menu" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+            <img src="images/wifi-a.jpg" alt="ironside network visible in macOS WiFi menu" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
             <div class="img-placeholder" style="display:none">
               <div class="ph-icon">📷</div>
               <div class="ph-label">→ Use image: images/wifi-a.png</div>
@@ -349,7 +379,7 @@
           </div>
           <div class="callout info">
             <span class="icon">ℹ️</span>
-            <div>Once the rifle scope connects to the new network, the <code>ironside</code> hotspot disappears from your WiFi list. Reconnect your laptop to the same network you just selected.</div>
+            <div>Once the rifle scope connects to the new network, the <code>ironside</code> hotspot disappears from your WiFi list. Reconnect your laptop to the same network you selected in the captive portal.</div>
           </div>
           <div class="img-wrap">
             <img src="images/wifi-c.jpg" alt="Selecting a network and entering password in the portal" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
@@ -448,8 +478,8 @@
       </li>
       <li>
         <div class="step-body">
-          <p><strong>Look for two bright magenta or pink dots</strong> in the camera feed — these are the infrared LEDs from the sensor bar, as seen through the NoIR camera. The IR filter in the camera makes infrared light appear as a magenta or pink colour rather than white.</p>
-          <p>If the dots are not visible, or the status panel on the right shows <strong>no IR bar</strong>, adjust the settings:</p>
+          <p><strong>Look for two magenta or pink blobs</strong> in the camera feed — these are the infrared LED clusters from the sensor bar, as seen through the NoIR camera. Each end of the sensor bar has three LEDs grouped closely together; the camera and OpenCV see each cluster as a single blob, so you should see exactly two. The pink/magenta colour is how infrared light appears through a camera without an IR-blocking filter.</p>
+          <p>If the blobs are not visible, or the status panel on the right shows <strong>no IR bar</strong>, adjust the settings:</p>
 
           <table class="params-table">
             <thead>
@@ -507,15 +537,10 @@
       </li>
       <li>
         <div class="step-body">
-          <p><strong>Attach the laser pointer to the rifle.</strong> Aim the laser dot at the <strong>top-left calibration target</strong> visible on the preview feed — a circle with a crosshair drawn 20% in from the corner of the image. When the laser dot is on the crosshair, hold steady and click <strong>⌜ TOP-LEFT</strong> in the browser.</p>
+          <p><strong>Aim the rifle at the top-left calibration target</strong> visible on the preview feed — a circle with a crosshair drawn 20% in from the corner of the image. When the crosshair is centred in the preview, hold steady and click <strong>⌜ TOP-LEFT</strong> in the browser.</p>
           <div class="callout tip">
             <span class="icon">💡</span>
-            <div>The laser pointer makes it easy to aim precisely at the corner markers. Align the laser dot with the crosshair on the preview, not with the corner of the physical screen.</div>
-          </div>
-          <div class="img-placeholder">
-            <div class="ph-icon">📷</div>
-            <div class="ph-label">SCREENSHOT — Calibration target crosshairs visible on the preview feed</div>
-            <div class="ph-desc">Screenshot of the preview page with the four corner calibration crosshairs visible and one marked as captured (green)</div>
+            <div>If you have a laser pointer, attach it to the rifle — it makes aiming at the corner markers significantly easier and more precise. Align the laser dot with the crosshair marker on the preview feed. If no laser pointer is available, use any consistent method to align the rifle: rest it on a stable surface, use the iron sights, or have a second person observe the preview while you hold aim.</div>
           </div>
         </div>
       </li>
