@@ -34,3 +34,6 @@ build/
 # Pi SD card backups
 *.img.gz
 *.img
+
+# Archive — kept locally, not published
+archive/

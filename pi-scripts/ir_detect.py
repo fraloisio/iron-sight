@@ -12,7 +12,7 @@ import RPi.GPIO as GPIO
 # ── GPIO setup ────────────────────────────────────────────
 TRIGGER_PIN  = 22   # Brown — microswitch NO, fires shoot
 RECOIL_PIN   = 27   # White — relay IN, drives solenoid
-RECOIL_ENABLED = True
+RECOIL_ENABLED = False  # solenoid removed from installation
 RECOIL_MS      = 300  # solenoid pulse duration in milliseconds
 
 GPIO.setmode(GPIO.BCM)
