@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iron Sight — Manual</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:     #1a6b3c;
+      --brand-lt:  #e8f5ee;
+      --accent:    #c8392b;
+      --text:      #1a1a1a;
+      --muted:     #6b7280;
+      --border:    #e5e7eb;
+      --bg:        #ffffff;
+      --bg-alt:    #f9fafb;
+      --code-bg:   #1e1e2e;
+      --code-fg:   #a8ff60;
+      --sidebar-w: 260px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px; line-height: 1.7; color: var(--text);
+      background: var(--bg); display: flex; min-height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    nav {
+      width: var(--sidebar-w); flex-shrink: 0;
+      background: var(--bg-alt); border-right: 1px solid var(--border);
+      padding: 32px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    }
+    .nav-logo {
+      padding: 0 24px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
+    }
+    .nav-logo h1 { font-size: 1rem; font-weight: 700; color: var(--brand); }
+    .nav-logo p  { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+    nav ul { list-style: none; }
+    nav ul li a {
+      display: block; padding: 6px 24px; font-size: 0.85rem; color: var(--muted);
+      text-decoration: none; border-left: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    nav ul li a:hover { color: var(--brand); background: var(--brand-lt); }
+    nav ul li.section-label {
+      padding: 16px 24px 4px; font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em; color: #9ca3af;
+    }
+    nav ul li.active > a { color: var(--brand); border-left-color: var(--brand); background: var(--brand-lt); font-weight: 600; }
+
+    /* ── Main content ── */
+    main { flex: 1; max-width: 800px; padding: 48px 56px; }
+
+    section { margin-bottom: 64px; }
+    section:target { scroll-margin-top: 24px; }
+
+    h2 {
+      font-size: 1.6rem; font-weight: 700; color: var(--text);
+      border-bottom: 2px solid var(--brand); padding-bottom: 10px;
+      margin-bottom: 24px;
+    }
+    h3 { font-size: 1.1rem; font-weight: 600; margin: 32px 0 12px; color: var(--text); }
+    h4 { font-size: 0.9rem; font-weight: 600; margin: 20px 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    p  { margin-bottom: 12px; }
+    a  { color: var(--brand); }
+
+    /* ── Steps ── */
+    .steps { list-style: none; counter-reset: step; margin: 16px 0; }
+    .steps li {
+      counter-increment: step; display: flex; gap: 16px;
+      margin-bottom: 20px; align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step); background: var(--brand); color: #fff;
+      font-size: 0.75rem; font-weight: 700; min-width: 24px; height: 24px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .steps li .step-body { flex: 1; }
+    .steps li .step-body p:last-child { margin-bottom: 0; }
+
+    /* ── Code ── */
+    code {
+      background: #f0f0f0; color: #c8392b; padding: 2px 6px;
+      border-radius: 4px; font-family: 'SF Mono', 'Menlo', monospace; font-size: 0.85em;
+    }
+    .cmd {
+      background: var(--code-bg); color: var(--code-fg);
+      font-family: 'SF Mono', 'Menlo', monospace; font-size: 0.85rem;
+      padding: 14px 18px; border-radius: 8px; margin: 10px 0 16px;
+      white-space: pre; overflow-x: auto; line-height: 1.6;
+    }
+    .cmd .comment { color: #6b7280; }
+
+    /* ── Callouts ── */
+    .callout {
+      border-radius: 8px; padding: 14px 18px; margin: 16px 0; font-size: 0.9rem;
+      display: flex; gap: 12px; align-items: flex-start;
+    }
+    .callout .icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+    .callout.info    { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .callout.warning { background: #fffbeb; border: 1px solid #fcd34d; }
+    .callout.tip     { background: var(--brand-lt); border: 1px solid #6ee7a7; }
+    .callout.danger  { background: #fef2f2; border: 1px solid #fca5a5; }
+    .callout strong  { display: block; margin-bottom: 2px; }
+
+    /* ── Image placeholders ── */
+    .img-placeholder {
+      border: 2px dashed var(--border); border-radius: 8px;
+      background: var(--bg-alt); padding: 32px 16px; text-align: center;
+      margin: 16px 0; color: var(--muted);
+    }
+    .img-placeholder .ph-icon { font-size: 2rem; margin-bottom: 8px; }
+    .img-placeholder .ph-label { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+    .img-placeholder .ph-desc  { font-size: 0.8rem; margin-top: 4px; }
+
+    /* ── Info grid ── */
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
+    .info-card { background: var(--bg-alt); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; }
+    .info-card .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .info-card .value { font-family: 'SF Mono', 'Menlo', monospace; font-size: 0.9rem; }
+
+    /* ── Requirements list ── */
+    .req-list { list-style: none; margin: 16px 0; }
+    .req-list li { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; align-items: flex-start; }
+    .req-list li:last-child { border-bottom: none; }
+    .req-list li::before { content: '✓'; color: var(--brand); font-weight: 700; flex-shrink: 0; }
+
+    /* ── Troubleshooting ── */
+    .trouble-item { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 12px; overflow: hidden; }
+    .trouble-q { background: var(--bg-alt); padding: 12px 16px; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: flex; justify-content: space-between; }
+    .trouble-a { padding: 14px 16px; font-size: 0.9rem; border-top: 1px solid var(--border); }
+
+    /* ── Hero ── */
+    .hero { background: var(--brand); color: #fff; border-radius: 12px; padding: 32px 36px; margin-bottom: 48px; }
+    .hero h2 { color: #fff; border-color: rgba(255,255,255,0.3); font-size: 1.4rem; }
+    .hero p { color: rgba(255,255,255,0.85); margin-bottom: 0; }
+
+    /* ── Badge ── */
+    .badge { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; vertical-align: middle; margin-left: 8px; }
+    .badge.tested { background: var(--brand-lt); color: var(--brand); }
+    .badge.optional { background: #fef3c7; color: #92400e; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <h1>Iron Sight</h1>
+    <p>Operation Manual</p>
+  </div>
+  <ul>
+    <li class="section-label">Getting started</li>
+    <li><a href="#requirements">Requirements</a></li>
+    <li><a href="#starting-device">Starting the device</a></li>
+    <li><a href="#connecting">Connecting to the device</a></li>
+    <li class="section-label">Operation</li>
+    <li><a href="#calibration">Calibration</a></li>
+    <li><a href="#ir-detection">IR detection</a></li>
+    <li><a href="#game">Starting the game</a></li>
+    <li class="section-label">Reference</li>
+    <li><a href="#troubleshooting">Troubleshooting</a></li>
+    <li><a href="#assembly">Assembly & building more</a></li>
+  </ul>
+</nav>
+
+<main>
+
+  <div class="hero">
+    <h2>Iron Sight — Operation Manual</h2>
+    <p>A step-by-step guide to setting up, calibrating, and running the Iron Sight interactive shooting gallery installation. No prior knowledge of the project is assumed.</p>
+  </div>
+
+  <!-- ── REQUIREMENTS ── -->
+  <section id="requirements">
+    <h2>Requirements</h2>
+    <ul class="req-list">
+      <li>
+        <div>
+          <strong>A WiFi connection</strong><br>
+          A smartphone hotspot works well and is recommended for first-time setup. Public or venue WiFi may have firewalls that interfere — if in doubt, use a hotspot.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>A computer with a terminal</strong> <span class="badge tested">Tested on MacBook</span><br>
+          On macOS open <strong>Terminal</strong> (Applications → Utilities → Terminal). On Windows use <strong>PowerShell</strong> or <strong>Windows Terminal</strong>. On Linux any terminal emulator will work.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Basic terminal familiarity</strong><br>
+          You'll need to type a few commands and press Enter. Each command is shown in full — no prior experience is strictly required if you follow the steps carefully.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>The game file</strong><br>
+          <code>shooting-gallery.html</code> — open this in any modern browser (Chrome, Safari, Firefox). No internet connection needed.
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ── STARTING THE DEVICE ── -->
+  <section id="starting-device">
+    <h2>Starting the device</h2>
+    <p>The scope contains a Raspberry Pi computer that runs all the software. It needs to be powered on and connected to the same WiFi network as your computer before anything else can happen.</p>
+
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <p><strong>Connect the scope to a power source</strong> using a micro USB cable. Use the port labelled <strong>PWR</strong> — not the USB data port next to it.</p>
+          <div class="img-placeholder">
+            <div class="ph-icon">📷</div>
+            <div class="ph-label">IMAGE — Power port</div>
+            <div class="ph-desc">Photo showing the correct micro USB PWR port on the Pi Zero W2 inside or on the scope</div>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p><strong>Press the yellow button</strong> on the external black box to power on the system.</p>
+          <div class="img-placeholder">
+            <div class="ph-icon">📷</div>
+            <div class="ph-label">IMAGE — Yellow power button</div>
+            <div class="ph-desc">Photo of the yellow button on the external black box</div>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p><strong>Check for the green LED</strong> inside the scope — this confirms the Pi has power and is booting.</p>
+          <div class="img-placeholder">
+            <div class="ph-icon">📷</div>
+            <div class="ph-label">IMAGE — Green LED</div>
+            <div class="ph-desc">Photo showing the green activity LED visible through the scope body</div>
+          </div>
+          <div class="callout tip">
+            <span class="icon">💡</span>
+            <div>The LED will blink rapidly during boot. When it settles to a slow blink or stays on, the Pi is ready — this takes about 30 seconds.</div>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p><strong>Wait for the <code>ironside</code> WiFi network to appear</strong> on your computer. This takes up to 30 seconds after the LED settles. The Pi broadcasts its own hotspot if no known network is found.</p>
+          <div class="img-placeholder">
+            <div class="ph-icon">📷</div>
+            <div class="ph-label">SCREENSHOT — ironside network visible in WiFi list</div>
+            <div class="ph-desc">Screenshot of macOS WiFi menu showing "ironside" network</div>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p><strong>Connect your computer to <code>ironside</code></strong>. Password: <code>ironsight</code>. A portal page will open automatically in your browser (or navigate to <code>http://10.42.0.1</code> manually).</p>
+          <div class="img-placeholder">
+            <div class="ph-icon">📷</div>
+            <div class="ph-label">SCREENSHOT — Captive portal page</div>
+            <div class="ph-desc">Screenshot of the "Iron Sight — Add WiFi" portal page listing available networks</div>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p><strong>Select a WiFi network</strong> from the portal list and enter its password. Both your computer and the scope will connect to this network.</p>
+          <div class="callout warning">
+            <span class="icon">⚠️</span>
+            <div><strong>Important</strong> — both the scope and your computer must be on the <em>same</em> network for the game to work. A smartphone hotspot is ideal. Public venue WiFi may have client isolation (devices can't talk to each other) — if the game doesn't connect, switch to a hotspot.</div>
+          </div>
+          <div class="callout info">
+            <span class="icon">ℹ️</span>
+            <div>Once the scope connects to the new network, the <code>ironside</code> hotspot disappears. Reconnect your computer to the same network you just selected.</div>
+          </div>
+          <div class="img-placeholder">
+            <div class="ph-icon">📷</div>
+            <div class="ph-label">SCREENSHOT — Selecting a network in the portal</div>
+            <div class="ph-desc">Example: selecting a smartphone hotspot called "ironwifi", entering password "ironsight"</div>
+          </div>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ── CONNECTING ── -->
+  <section id="connecting">
+    <h2>Connecting to the device</h2>
+    <p>Once both your computer and the scope are on the same WiFi network, you can connect via SSH to run commands on the Pi directly.</p>
+
+    <h3>Standard connection (WiFi)</h3>
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <p>Open your terminal and type:</p>
+          <div class="cmd">ssh admin@scope.local</div>
+          <p>When prompted for a password, type <code>ironsight</code> and press Enter. <em>The password will not appear as you type — this is normal.</em></p>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p>You should see a prompt like <code>admin@scope:~ $</code> — you are now inside the Pi. Every command you type here runs on the scope, not your computer.</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="info-grid">
+      <div class="info-card"><div class="label">Hostname</div><div class="value">scope.local</div></div>
+      <div class="info-card"><div class="label">Username</div><div class="value">admin</div></div>
+      <div class="info-card"><div class="label">Password</div><div class="value">ironsight</div></div>
+      <div class="info-card"><div class="label">SSH command</div><div class="value">ssh admin@scope.local</div></div>
+    </div>
+
+    <h3>Alternative: USB cable <span class="badge optional">No WiFi needed</span></h3>
+    <p>Connect the Pi to your computer with a data USB cable (use the USB port, not PWR). Wait 30 seconds, then:</p>
+    <div class="cmd">ssh admin@10.12.194.1</div>
+    <div class="callout info">
+      <span class="icon">ℹ️</span>
+      <div>Use <code>10.12.194.1</code> instead of <code>scope.local</code> for all URLs when connected via USB. Everything else is identical.</div>
+    </div>
+
+    <h3>Opening a second terminal session</h3>
+    <p>You will need two separate SSH sessions running simultaneously — one for calibration or detection, one to keep free for other commands. Open a new terminal window and SSH in again with the same credentials.</p>
+  </section>
+
+  <!-- ── CALIBRATION ── -->
+  <section id="calibration">
+    <h2>Calibration</h2>
+    <p>Calibration teaches the system exactly where the projected screen is. It maps the camera's view to the game's coordinate space. <strong>You must calibrate at the installation site</strong> with the projector on and the IR bar in its final position. Recalibrate any time the projector, IR bar, or scope position changes.</p>
+
+    <div class="callout warning">
+      <span class="icon">⚠️</span>
+      <div><strong>Before calibrating</strong> — make sure the IR bar is powered on and fixed in its final position. Any movement of the IR bar after calibration will require recalibration.</div>
+    </div>
+
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <p>In your SSH terminal, start the preview tool:</p>
+          <div class="cmd">python3 ~/preview.py</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p>On your computer, open a browser and navigate to:</p>
+          <div class="cmd">http://scope.local:8080</div>
+          <p>You should see a live camera feed from the scope with a control panel on the right.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p><strong>Check the live feed for two bright white dots</strong> — these are the IR LEDs from the Wii sensor bar. If you see them, you're ready. If not:</p>
+          <ul style="margin: 8px 0 0 16px; font-size:0.9rem;">
+            <li>Lower the <strong>Exposure</strong> slider to 1000–2000 µs to suppress ambient light</li>
+            <li>Check the <strong>Status</strong> indicator — it should say <strong>LOCKED</strong> when both dots are detected</li>
+            <li>Increase <strong>Gain</strong> slightly if the dots are too faint</li>
+          </ul>
+          <div class="img-placeholder">
+            <div class="ph-icon">📷</div>
+            <div class="ph-label">SCREENSHOT — Preview page showing two IR dots detected, status LOCKED</div>
+            <div class="ph-desc">Browser screenshot of scope.local:8080 with two green circles around the IR dots</div>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p>Once detection is stable, click <strong>SAVE PARAMS</strong> to lock in your exposure settings.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p><strong>Aim the rifle at the top-left calibration target</strong> shown on the preview (a circle with crosshair, 20% in from the corner). Hold steady, then click <strong>⌜ TOP-LEFT</strong> in the browser.</p>
+          <div class="img-placeholder">
+            <div class="ph-icon">📷</div>
+            <div class="ph-label">SCREENSHOT — Calibration targets visible on preview</div>
+            <div class="ph-desc">Screenshot showing the four corner target markers on the live camera feed</div>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p>Repeat for the remaining three corners in any order: <strong>⌝ TOP-RIGHT</strong>, <strong>⌞ BOTTOM-LEFT</strong>, <strong>⌟ BOTTOM-RIGHT</strong>. Each button turns green when captured successfully.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p>Once all four corners are captured, click <strong>SAVE CALIBRATION</strong>. You will see a confirmation message. The calibration is now saved to the Pi.</p>
+          <div class="callout tip">
+            <span class="icon">💡</span>
+            <div>Calibration persists on the Pi — you do not need to redo it every session, only when the physical setup changes.</div>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p>Stop the preview tool by pressing <strong>Ctrl + C</strong> in the SSH terminal.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ── IR DETECTION ── -->
+  <section id="ir-detection">
+    <h2>Starting IR detection</h2>
+    <p>The IR detection script is the core of the system. It reads the camera continuously, tracks the IR dots, and broadcasts the aim position and trigger events over the network for the game to receive.</p>
+
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <p>In your SSH terminal (make sure the preview tool is stopped first), run:</p>
+          <div class="cmd">python3 ~/ir_detect.py</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p>You should see output like:</p>
+          <div class="cmd"><span class="comment">Params loaded from /home/admin/params.json
+Calibration loaded from /home/admin/calibration.json
+Starting IR tracker + WebSocket server...
+WebSocket server running on port 8765
+Camera started</span></div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p>Point the rifle at the IR bar. You should see lines like:</p>
+          <div class="cmd"><span class="comment">cam:(160,120)/320x240  aim:(0.512,0.489)</span></div>
+          <p>The <code>aim</code> values are normalised coordinates (0 to 1) representing where on screen the rifle is pointing.</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout info">
+      <span class="icon">ℹ️</span>
+      <div>Leave this terminal running. The WebSocket server on port 8765 must stay active for the game to receive position data. If you need to do something else on the Pi, open a second SSH session.</div>
+    </div>
+
+    <h3>Stopping detection</h3>
+    <p>Press <strong>Ctrl + C</strong> in the SSH terminal. If it doesn't respond, use:</p>
+    <div class="cmd">pkill -f ir_detect.py</div>
+  </section>
+
+  <!-- ── GAME ── -->
+  <section id="game">
+    <h2>Starting the game</h2>
+    <p>The game runs entirely in a browser — no installation, no server. It connects to the IR detection script over the local network automatically.</p>
+
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <p>Make sure <code>ir_detect.py</code> is running on the Pi (see previous section).</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p>On your computer, open <code>shooting-gallery.html</code> in a browser. Double-click the file, or drag it into a browser window.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p>The game connects automatically. Within a few seconds the crosshair should respond to the rifle's aim. Point the rifle at the IR bar and move it — the crosshair should follow.</p>
+          <div class="callout tip">
+            <span class="icon">💡</span>
+            <div>If the crosshair doesn't move, check the Troubleshooting section. The most common cause is the computer and scope being on different networks.</div>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <p>Pull the trigger to shoot. A hit is registered when the crosshair is over a target at the moment of firing.</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout info">
+      <span class="icon">ℹ️</span>
+      <div><strong>Projecting the game</strong> — connect your computer to the projector via HDMI. Set the projector as the primary display or mirror it, then open <code>shooting-gallery.html</code> in full-screen mode (F11 on most browsers, or Cmd+Shift+F on macOS).</div>
+    </div>
+  </section>
+
+  <!-- ── TROUBLESHOOTING ── -->
+  <section id="troubleshooting">
+    <h2>Troubleshooting</h2>
+
+    <div class="trouble-item">
+      <div class="trouble-q">The <code>ironside</code> WiFi network never appears</div>
+      <div class="trouble-a">
+        <p>The hotspot only activates if no known WiFi network is in range. If the Pi previously connected to a network that is still in range (e.g. your home WiFi), it will connect to that instead of broadcasting a hotspot.</p>
+        <p>Connect via USB cable (<code>ssh admin@10.12.194.1</code>) and remove the saved network:</p>
+        <div class="cmd">nmcli connection show
+sudo nmcli connection delete "NETWORK-NAME"</div>
+        <p>Then reboot — the hotspot will appear after about 30 seconds.</p>
+      </div>
+    </div>
+
+    <div class="trouble-item">
+      <div class="trouble-q">Can't SSH in — "Connection refused" or "No route to host"</div>
+      <div class="trouble-a">
+        <p>The most common cause is the computer and scope being on different networks. Confirm both are connected to the same WiFi. If using <code>scope.local</code>, try the IP address directly instead — run <code>arp -a</code> in your terminal to find the Pi's IP. As a last resort, connect via USB.</p>
+      </div>
+    </div>
+
+    <div class="trouble-item">
+      <div class="trouble-q">No IR dots visible in the preview — status shows "no IR bar"</div>
+      <div class="trouble-a">
+        <p>Check these in order:</p>
+        <ul style="margin: 8px 0 0 16px; font-size:0.9rem; line-height:2;">
+          <li>Is the IR bar plugged in and powered? It has no visible light — use a phone camera to see if it glows purple/white.</li>
+          <li>Is the rifle pointing at the bar? The camera must have the bar in its field of view.</li>
+          <li>Lower the <strong>Exposure</strong> slider — ambient light (sunlight, spotlights) can wash out the IR signal.</li>
+          <li>Check the <strong>Brightness</strong> stat in the panel — if it's below the <strong>Min Brightness</strong> threshold, the bar is too faint. Lower the threshold or raise <strong>Gain</strong>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="trouble-item">
+      <div class="trouble-q">The crosshair moves in the preview but not in the game</div>
+      <div class="trouble-a">
+        <p>The game connects to the WebSocket server on port 8765. Check that <code>ir_detect.py</code> is running (not <code>preview.py</code>). Open the browser console (F12) and look for WebSocket connection errors. Confirm the computer and Pi are on the same network.</p>
+      </div>
+    </div>
+
+    <div class="trouble-item">
+      <div class="trouble-q">The crosshair is jittery or wobbles when holding still</div>
+      <div class="trouble-a">
+        <p>Open <code>preview.py</code> and increase the <strong>Deadzone</strong> slider — this prevents the crosshair updating for micro-movements below the threshold. A value of 0.01–0.02 is a good starting point. Also try lowering <strong>Smoothing alpha</strong> for a more damped response. Save Params when happy.</p>
+      </div>
+    </div>
+
+    <div class="trouble-item">
+      <div class="trouble-q">The crosshair is offset — doesn't point where the rifle is aimed</div>
+      <div class="trouble-a">
+        <p>The calibration is out of date. This happens when the projector, IR bar, or scope position has changed since the last calibration. Run <code>preview.py</code> and redo the four-corner calibration process.</p>
+      </div>
+    </div>
+
+    <div class="trouble-item">
+      <div class="trouble-q">The trigger doesn't register shots</div>
+      <div class="trouble-a">
+        <p>Check the physical microswitch wiring — the brown wire (COM) connects to the trigger, the green wire (NO) connects to GND. In the <code>ir_detect.py</code> terminal output, pulling the trigger should print <code>Trigger fired</code>. If it doesn't, the issue is hardware. If it does but the game doesn't respond, check the WebSocket connection.</p>
+      </div>
+    </div>
+
+    <div class="trouble-item">
+      <div class="trouble-q">The Pi won't shut down cleanly / is unresponsive</div>
+      <div class="trouble-a">
+        <p>SSH in and run:</p>
+        <div class="cmd">sudo shutdown now</div>
+        <p>Wait for the green LED to stop blinking before disconnecting power. Never pull power while the LED is active — this can corrupt the SD card.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ASSEMBLY ── -->
+  <section id="assembly">
+    <h2>Assembly & building more</h2>
+    <p>This section covers the physical construction of the scope unit and how to replicate or extend the hardware. <em>Content to be added by Francesco Aloisio.</em></p>
+
+    <div class="callout info">
+      <span class="icon">ℹ️</span>
+      <div>3D print files (Rhino source and STL), assembly photos, and component references are in the <code>3d-files/</code> folder of this repository.</div>
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>
