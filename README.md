@@ -170,7 +170,7 @@ Both HTML files are fully self-contained — no server, no internet, no dependen
 **Use Raspberry Pi OS Lite 32-bit** (not 64-bit).  
 The 64-bit variant has a known NetworkManager bug that breaks WPA2 WiFi (`key-mgmt` negotiation fails). 32-bit works correctly.
 
-Flash with Raspberry Pi Imager. Enable SSH and set hostname to `fraspberry2` in the imager's advanced options.
+Flash with Raspberry Pi Imager. Enable SSH and set hostname to `scope` in the imager's advanced options.
 
 ### Python dependencies
 
@@ -198,13 +198,13 @@ The Pi supports three connection modes. Choose based on what network infrastruct
 
 Connect the Pi to the game laptop with a USB cable (Pi's USB OTG port, **not** the PWR port).
 
-The Pi presents itself as a USB Ethernet adapter. The laptop gets an IP automatically. Access the Pi at `fraspberry2.local` or `192.168.7.2`.
+The Pi presents itself as a USB Ethernet adapter. The laptop gets an IP automatically. Access the Pi at `scope.local` or `192.168.7.2`.
 
 This mode requires USB gadget mode to be enabled in `/boot/config.txt` and `/boot/cmdline.txt`. See the handover document (`iron-sight-handover.docx`) for the exact configuration steps.
 
 ### Mode 2 — WiFi (museum network)
 
-Connect the Pi to the venue's WiFi. The Pi is reachable at `fraspberry2.local` on the same network.
+Connect the Pi to the venue's WiFi. The Pi is reachable at `scope.local` on the same network.
 
 To save a WiFi password onto the Pi:
 
@@ -244,7 +244,7 @@ Calibration maps the camera's view to the projected screen. It must be done at t
    python3 preview.py
    ```
 
-2. Open `http://fraspberry2.local:8080` in a browser on the game laptop.
+2. Open `http://scope.local:8080` in a browser on the game laptop.
 
 3. Check the live feed — you should see two bright IR dots. If not, adjust **Exposure** down (try 1000–2000 µs) until ambient light is suppressed and only the IR dots are visible. Use **Dilation** to merge each dot cluster. **Save Params** when happy.
 
@@ -274,7 +274,7 @@ python3 ~/ironside-shutdown.py
 python3 ~/ir_detect.py
 ```
 
-Then open `shooting-gallery.html` on the game laptop. The game connects to `ws://fraspberry2.local:8765` automatically.
+Then open `shooting-gallery.html` on the game laptop. The game connects to `ws://scope.local:8765` automatically.
 
 ### Optional: autostart on boot (recommended for museum deployment)
 
@@ -322,7 +322,7 @@ sudo systemctl start ironside-shutdown.service ironside.service
 
 ## Detection Parameters
 
-Accessible in `preview.py` at `http://fraspberry2.local:8080`. Changes apply live. Click **SAVE PARAMS** to persist — values are restored automatically on next startup.
+Accessible in `preview.py` at `http://scope.local:8080`. Changes apply live. Click **SAVE PARAMS** to persist — values are restored automatically on next startup.
 
 | Parameter | Default | Effect |
 |---|---|---|

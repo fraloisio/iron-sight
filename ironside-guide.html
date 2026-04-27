@@ -40,12 +40,12 @@
   <div style="background:#1b3a1e;border:1px solid #4caf50;border-radius:8px;padding:14px 18px;margin-bottom:24px;">
     <div style="font-size:0.75rem;color:#4caf50;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">SD Card Backup Reminder</div>
     <div style="font-size:0.88rem;color:#ccc;line-height:1.5;">Every time you reach a stable milestone, back up the SD card:<br>
-    <code style="background:#252525;padding:2px 6px;border-radius:4px;color:#e6db74;">sudo dd if=/dev/disk4 bs=4m | gzip > ~/Desktop/fraspberry2-backup.img.gz</code><br>
+    <code style="background:#252525;padding:2px 6px;border-radius:4px;color:#e6db74;">sudo dd if=/dev/disk4 bs=4m | gzip > ~/Desktop/scope-backup.img.gz</code><br>
     <span style="color:#888;font-size:0.8rem;">Check disk number first with <code style="background:#252525;padding:1px 5px;border-radius:3px;color:#e6db74;">diskutil list</code>. Last backup: 2026-04-27.</span></div>
   </div>
 
   <h1>Iron Sight — Connection Guide</h1>
-  <p class="subtitle">Pi hostname: <code>fraspberry2</code> &nbsp;·&nbsp; Three ways to connect</p>
+  <p class="subtitle">Pi hostname: <code>scope</code> &nbsp;·&nbsp; SSH: <code>admin</code> / <code>ironsight</code> &nbsp;·&nbsp; Three ways to connect</p>
 
   <!-- SCENARIO A: WiFi -->
   <div class="scenario primary">
@@ -53,17 +53,18 @@
       <span class="badge green">Option A</span>
       <h2>Normal WiFi</h2>
     </div>
-    <p class="when">Use this at the museum or anywhere with the ICO-860CAD network.</p>
+    <p class="when">Use this at the venue — connect both the Mac and the Pi to the same WiFi network.</p>
     <ol class="steps">
-      <li>Connect your Mac to <code>ICO-860CAD</code> WiFi.</li>
+      <li>Connect the Pi to the venue WiFi (see "Adding a new WiFi network" below).</li>
       <li>Pi connects automatically on boot.</li>
-      <li>SSH in: <code>ssh admin@fraspberry2.local</code></li>
+      <li>Connect your Mac to the same WiFi network.</li>
+      <li>SSH in: <code>ssh admin@scope.local</code> &nbsp; password: <code>ironsight</code></li>
     </ol>
     <div class="info-grid">
-      <div class="info-item"><div class="info-label">Pi IP</div><div class="info-value">192.168.0.178</div></div>
-      <div class="info-item"><div class="info-label">Fallback hostname</div><div class="info-value">fraspberry2.local</div></div>
-      <div class="info-item"><div class="info-label">Preview URL</div><div class="info-value">:8080</div></div>
-      <div class="info-item"><div class="info-label">WebSocket</div><div class="info-value">:8765</div></div>
+      <div class="info-item"><div class="info-label">Hostname</div><div class="info-value">scope.local</div></div>
+      <div class="info-item"><div class="info-label">SSH user</div><div class="info-value">admin</div></div>
+      <div class="info-item"><div class="info-label">Preview URL</div><div class="info-value">scope.local:8080</div></div>
+      <div class="info-item"><div class="info-label">WebSocket</div><div class="info-value">scope.local:8765</div></div>
     </div>
   </div>
 
@@ -124,12 +125,12 @@
   <p style="font-size:0.85rem; color:#ccc; margin-top:16px;">Camera preview + calibration:</p>
   <div class="cmd-block">pkill -f preview.py; pkill -f ir_detect.py; python3 ~/preview.py</div>
   <p style="font-size:0.8rem; color:#666; margin-top:4px;">Then open in Mac browser:
-  WiFi / Hotspot → <code>http://fraspberry2.local:8080</code>
+  WiFi / Hotspot → <code>http://scope.local:8080</code>
   USB → <code>http://10.12.194.1:8080</code></p>
 
   <p style="font-size:0.85rem; color:#ccc; margin-top:16px;">IR tracker + WebSocket server (game mode):</p>
   <div class="cmd-block">pkill -f preview.py; pkill -f ir_detect.py; python3 ~/ir_detect.py</div>
-  <p style="font-size:0.8rem; color:#666; margin-top:4px;">Then open <code>shooting-gallery.html</code> in your browser. <code>fraspberry2.local</code> works on WiFi, hotspot, and USB.</p>
+  <p style="font-size:0.8rem; color:#666; margin-top:4px;">Then open <code>shooting-gallery.html</code> in your browser. <code>scope.local</code> works on WiFi, hotspot, and USB.</p>
 
   <p style="font-size:0.85rem; color:#ccc; margin-top:16px;">Stop either script:</p>
   <div class="cmd-block">Ctrl + C</div>

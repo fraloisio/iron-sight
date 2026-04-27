@@ -4,7 +4,7 @@ Streams annotated camera feed and runs calibration from the browser.
 
   python3 preview.py
 
-Open on your Mac:  http://fraspberry2.local:8080
+Open on your Mac:  http://scope.local:8080
 """
 
 import cv2
@@ -634,6 +634,6 @@ cam_thread.start()
 time.sleep(2)
 
 print('Preview + calibration running:')
-print('  http://fraspberry2.local:8080')
+print('  http://scope.local:8080')
 print('Ctrl+C to stop.\n')
 ThreadingHTTPServer(('0.0.0.0', 8080), Handler).serve_forever()
