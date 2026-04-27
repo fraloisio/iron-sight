@@ -41,7 +41,7 @@
     <div style="font-size:0.75rem;color:#4caf50;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">SD Card Backup Reminder</div>
     <div style="font-size:0.88rem;color:#ccc;line-height:1.5;">Every time you reach a stable milestone, back up the SD card:<br>
     <code style="background:#252525;padding:2px 6px;border-radius:4px;color:#e6db74;">sudo dd if=/dev/disk4 bs=4m | gzip > ~/Desktop/fraspberry2-backup.img.gz</code><br>
-    <span style="color:#888;font-size:0.8rem;">Check disk number first with <code style="background:#252525;padding:1px 5px;border-radius:3px;color:#e6db74;">diskutil list</code>. Last backup: after MVP tag (2026-04-06).</span></div>
+    <span style="color:#888;font-size:0.8rem;">Check disk number first with <code style="background:#252525;padding:1px 5px;border-radius:3px;color:#e6db74;">diskutil list</code>. Last backup: 2026-04-27.</span></div>
   </div>
 
   <h1>Iron Sight — Connection Guide</h1>
@@ -116,9 +116,12 @@
   <!-- Running the scripts -->
   <h3>Starting the tracker</h3>
 
-  <p style="font-size:0.85rem; color:#888; margin-bottom:8px;">SSH into the Pi, then:</p>
+  <p style="font-size:0.85rem; color:#888; margin-bottom:8px;">SSH into the Pi, then run each in a separate terminal session:</p>
 
-  <p style="font-size:0.85rem; color:#ccc; margin-top:12px;">Camera preview + calibration:</p>
+  <p style="font-size:0.85rem; color:#ccc; margin-top:12px;">Shutdown button daemon (always run this first, keep it running):</p>
+  <div class="cmd-block">python3 ~/ironside-shutdown.py</div>
+
+  <p style="font-size:0.85rem; color:#ccc; margin-top:16px;">Camera preview + calibration:</p>
   <div class="cmd-block">pkill -f preview.py; pkill -f ir_detect.py; python3 ~/preview.py</div>
   <p style="font-size:0.8rem; color:#666; margin-top:4px;">Then open in Mac browser:
   WiFi / Hotspot → <code>http://fraspberry2.local:8080</code>
@@ -144,7 +147,7 @@ pkill -f ir_detect.py</div>
 
     <div class="info-item">
       <div class="info-label">Ideal shooting distance</div>
-      <div style="font-size:0.9rem; color:#e0e0e0; margin-top:4px;">3–4 metres from the screen. Too close and the IR clusters overlap; too far and the LEDs become too dim to detect reliably.</div>
+      <div style="font-size:0.9rem; color:#e0e0e0; margin-top:4px;">5.5–6 metres from the screen, aligned with the centre of the projected area. Validated in the museum installation. If the LEDs appear too dim at this distance, lower the <strong>Exposure</strong> first, then raise <strong>Gain</strong>.</div>
     </div>
 
     <div class="info-item">
@@ -163,8 +166,8 @@ pkill -f ir_detect.py</div>
     </div>
 
     <div class="info-item">
-      <div class="info-label">Flickering crosshair</div>
-      <div style="font-size:0.9rem; color:#e0e0e0; margin-top:4px;">Use <code>preview.py</code> to raise the <strong>Alpha</strong> slider for snappier response, or lower it for smoother movement. If the crosshair jumps, raise <strong>Min Brightness</strong> to filter out ambient IR noise.</div>
+      <div class="info-label">Flickering / jittery crosshair</div>
+      <div style="font-size:0.9rem; color:#e0e0e0; margin-top:4px;">Raise <strong>Deadzone</strong> in <code>preview.py</code> — this prevents the cursor updating for micro-movements below the threshold. Then adjust <strong>Alpha</strong> (higher = snappier, lower = smoother). If the crosshair jumps erratically, raise <strong>Min Brightness</strong> to filter ambient IR noise or lower <strong>Exposure</strong>.</div>
     </div>
 
     <div class="info-item">
