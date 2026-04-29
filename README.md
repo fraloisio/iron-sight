@@ -51,6 +51,7 @@ The camera detects the two IR dots from the Wii bar and triangulates the midpoin
 | Computer | Raspberry Pi Zero W2 |
 | Camera | Raspberry Pi NoIR Camera Module v2.1 — 8 MP, 1080p, 75° FOV (IMX219 sensor) |
 | IR emitter | Nintendo Wii sensor bar (OEM, USB-powered) |
+| Laser pointer | KY-008 650 nm laser module (optional, used during calibration) |
 | Trigger | Hinge Lever Micro Switch (NO contact wired to GPIO22) |
 | Shutdown button | Momentary push button (wired to GPIO23 and GPIO3) |
 | Rifle base | Gevær M/10 (Colt Canada C7 variant, Danish Army service rifle), decommissioned prop |
@@ -126,8 +127,8 @@ These measurements were validated in the museum installation:
 | Projected surface width | 1.65 m |
 | Projected surface height | 1.02 m |
 | Bottom edge of projected area | 1.65 m from floor |
-| IR bar position | Centred horizontally, 60 cm below the top edge of the projected area |
-| Shooter position | 5.5–6 m from the wall, aligned with the centre of the projected area |
+| IR bar position | 25 cm below the top edge of the projected area, 60 cm from the top-right corner |
+| Shooter position | 5.5 to 6 m from the wall, aligned with the centre of the projected area |
 
 The current version of the software supports the IR bar placed either at the **top or bottom** of the projected area (not just the centre). Adjust the bar position and re-calibrate if the installation geometry differs.
 
@@ -153,9 +154,10 @@ The current version of the software supports the IR bar placed either at the **t
 | File | Purpose |
 |---|---|
 | `shooting-gallery.html` | Main game — open in any browser |
-| `dead-eye.html` | Western-themed variant |
+| `config.js` | WebSocket connection config (Pi hostname and port). Edit this if the Pi's hostname or IP changes. |
+| `ironside-manual.html` | Full operation manual. Serve locally with `python3 -m http.server 8080` to use the 3D viewer. |
 
-Both HTML files are fully self-contained — no server, no internet, no dependencies. Open directly in a browser.
+`shooting-gallery.html` is fully self-contained — no server, no internet, no dependencies. Open directly in a browser.
 
 ### Architecture note
 
@@ -171,6 +173,8 @@ Both HTML files are fully self-contained — no server, no internet, no dependen
 The 64-bit variant has a known NetworkManager bug that breaks WPA2 WiFi (`key-mgmt` negotiation fails). 32-bit works correctly.
 
 Flash with Raspberry Pi Imager. Enable SSH and set hostname to `scope` in the imager's advanced options.
+
+A pre-built image of a working installation is available at `archive/scope-backup-2026-04-28.img.gz`. Flash it directly — Raspberry Pi Imager can handle `.img.gz` without decompressing.
 
 ### Python dependencies
 
@@ -196,11 +200,11 @@ The Pi supports three connection modes. Choose based on what network infrastruct
 
 ### Mode 1 — USB (simplest, no WiFi needed)
 
-Connect the Pi to the game laptop with a USB cable (Pi's USB OTG port, **not** the PWR port).
+Connect the Pi to the game laptop with a USB **data** cable (Pi's USB OTG port, **not** the PWR port).
 
-The Pi presents itself as a USB Ethernet adapter. The laptop gets an IP automatically. Access the Pi at `scope.local` or `192.168.7.2`.
+The Pi presents itself as a USB Ethernet adapter. Access the Pi at `scope.local` or `10.12.194.1`.
 
-This mode requires USB gadget mode to be enabled in `/boot/config.txt` and `/boot/cmdline.txt`. See the handover document (`iron-sight-handover.docx`) for the exact configuration steps.
+This mode requires USB gadget mode to be enabled in `/boot/config.txt` and `/boot/cmdline.txt`. See `ironside-manual.html` (Pi setup section) for the exact configuration steps.
 
 ### Mode 2 — WiFi (museum network)
 
@@ -231,7 +235,7 @@ python3 ironside-portal.py  # optional: web UI to switch the Pi to a different W
 
 When the hotspot is active, navigate to `http://10.42.0.1` in a browser to get a portal page that lets you select a WiFi network and save credentials to the Pi (useful for switching from hotspot mode to museum WiFi mode without SSH).
 
-> See `iron-sight-handover.docx` for the full step-by-step network setup.
+> See `ironside-manual.html` for the full step-by-step network setup.
 
 ---
 
@@ -340,6 +344,6 @@ Accessible in `preview.py` at `http://scope.local:8080`. Changes apply live. Cli
 
 ## Game Configuration
 
-Both `shooting-gallery.html` and `dead-eye.html` have a `CFG` object at the top of their `<script>` block. All timing, scoring, and gameplay parameters are set there.
+`shooting-gallery.html` has a `CFG` object at the top of its `<script>` block. All timing, scoring, and gameplay parameters are set there.
 
-The WebSocket address the game connects to is also set in `CFG` — update it if the Pi's hostname or IP changes.
+The WebSocket address is set in `config.js` (not inside the HTML files) — update it there if the Pi's hostname or IP changes.

@@ -37,3 +37,7 @@ build/
 
 # Archive — kept locally, not published
 archive/
+
+# Manual and photos — kept locally, not published
+ironside-manual.html
+Images/
